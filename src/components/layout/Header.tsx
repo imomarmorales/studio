@@ -7,7 +7,6 @@ import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 const navLinks = [
   { href: "/#agenda", label: "Agenda" },
@@ -22,26 +21,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex md:hidden">
-          <Link href="/" className="flex items-center space-x-2">
-             <Image 
-              src="/logo.png" 
-              alt="Logo Semana de la Ingeniería"
-              width={30}
-              height={30}
-              className="object-contain"
-            />
-            <span className="font-bold">Ingeniería</span>
-          </Link>
-        </div>
-        <div className="hidden md:flex mr-6">
-             <Image 
-              src="/header-logos.png"
-              alt="Logos de la UAT y Facultad de Ingeniería de Tampico"
-              width={300}
-              height={50}
-              className="object-contain"
-              priority
-            />
+          <Logo />
         </div>
         
         <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
