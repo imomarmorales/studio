@@ -11,7 +11,7 @@ export function Logo() {
           height={40}
           className="object-contain"
         />
-        <span>Ingeniería 2025</span>
+        <span>Semana de la Ingeniería</span>
     </Link>
   );
 }
