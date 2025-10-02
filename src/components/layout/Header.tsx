@@ -17,22 +17,25 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
 
+  const linkClasses = (href: string) => cn(
+    "relative text-foreground/70 transition-colors hover:text-foreground after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:bg-primary after:origin-center after:scale-x-0 after:transition-transform after:duration-300 hover:after:scale-x-100",
+    pathname === href && "font-semibold text-foreground after:scale-x-100"
+  );
+
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="mr-4 md:flex">
+        <div className="mr-8 hidden md:flex">
           <Logo />
         </div>
         
-        <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
+        <nav className="hidden items-center space-x-8 text-sm font-medium md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={cn(
-                "transition-colors hover:text-foreground/80",
-                pathname === link.href ? "text-foreground" : "text-foreground/60"
-              )}
+              className={linkClasses(link.href)}
             >
               {link.label}
             </Link>
@@ -52,7 +55,7 @@ export function Header() {
                 <div className="p-4">
                   <Logo />
                 </div>
-                <nav className="mt-4 flex flex-col space-y-2 p-4">
+                <nav className="mt-4 flex flex-col space-y-4 p-4">
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
