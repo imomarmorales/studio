@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Auth, createUserWithEmailAndPassword } from "firebase/auth";
+import { Firestore, doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { PublicLayout } from "@/components/layout/PublicLayout";
+import { useAuth, useFirestore } from "@/firebase";
+import Link from "next/link";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre completo es requerido." }),
@@ -33,9 +37,23 @@ const formSchema = z.object({
   }),
 });
 
+// Function to generate a random password
+const generatePassword = () => {
+  const length = 12;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+  let password = "";
+  for (let i = 0, n = charset.length; i < n; ++i) {
+    password += charset.charAt(Math.floor(Math.random() * n));
+  }
+  return password;
+};
+
 export default function RegistrationPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const auth: Auth = useAuth();
+  const firestore: Firestore = useFirestore();
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,19 +63,39 @@ export default function RegistrationPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Here you would typically call an API to register the user
-    // and generate the QR code.
-    toast({
-      title: "¡Registro Exitoso!",
-      description: "Serás redirigido a tu panel de control.",
-    });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const { fullName, email } = values;
+    const password = generatePassword();
 
-    // Simulate API call and redirect
-    setTimeout(() => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(firestore, "users", user.uid);
+      const userData = {
+        name: fullName,
+        email: email,
+        id: user.uid,
+        points: 0,
+        digitalCredentialQR: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.uid}` // Example QR
+      };
+      
+      setDocumentNonBlocking(userDocRef, userData, { merge: true });
+
+      toast({
+        title: "¡Registro Exitoso!",
+        description: "Serás redirigido a tu panel de control.",
+      });
+
       router.push("/dashboard");
-    }, 2000);
+    } catch (error: any) {
+      console.error("Error al registrar usuario: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error en el registro",
+        description: error.message || "No se pudo completar el registro. Inténtalo de nuevo.",
+      });
+    }
   }
 
   return (

@@ -4,17 +4,18 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/shared/Logo";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 interface DigitalCredentialProps {
   user: {
     name: string;
     email: string;
+    digitalCredentialQR?: string;
   };
 }
 
 export function DigitalCredential({ user }: DigitalCredentialProps) {
-  const qrCodeImage = PlaceHolderImages.find(p => p.id === "qr-code-placeholder");
+  
+  const qrCodeUrl = user.digitalCredentialQR || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.email}`;
 
   return (
     <Card className="overflow-hidden">
@@ -26,18 +27,15 @@ export function DigitalCredential({ user }: DigitalCredentialProps) {
           <Logo />
         </div>
         
-        {qrCodeImage && (
-            <div className="flex justify-center my-6">
-                <Image
-                    src={qrCodeImage.imageUrl}
-                    alt={qrCodeImage.description}
-                    width={200}
-                    height={200}
-                    className="rounded-lg shadow-md"
-                    data-ai-hint={qrCodeImage.imageHint}
-                />
-            </div>
-        )}
+        <div className="flex justify-center my-6">
+            <Image
+                src={qrCodeUrl}
+                alt={`QR code for ${user.name}`}
+                width={200}
+                height={200}
+                className="rounded-lg shadow-md"
+            />
+        </div>
 
         <h3 className="text-xl font-semibold font-headline">{user.name}</h3>
         <p className="text-sm text-muted-foreground">{user.email}</p>
