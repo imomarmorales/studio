@@ -6,7 +6,7 @@ import Image from "next/image";
 export function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="w-full bg-background flex justify-center py-2 border-b">
+      <header className="w-full bg-white flex justify-center py-2 border-b">
          <Image 
           src="/header-logos.png"
           alt="Logos de la UAT y Facultad de Ingeniería de Tampico"
