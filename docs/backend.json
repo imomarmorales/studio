@@ -1,0 +1,472 @@
+{
+  "entities": {
+    "Participant": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Participant",
+      "type": "object",
+      "description": "Represents a participant in the Semana de la Ingenieria 2025 congress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Participant entity."
+        },
+        "institutionalEmail": {
+          "type": "string",
+          "description": "Institutional email address of the participant.",
+          "format": "email"
+        },
+        "digitalCredentialQR": {
+          "type": "string",
+          "description": "Unique QR code associated with the participant's digital credential."
+        },
+        "points": {
+          "type": "number",
+          "description": "Total gamification points earned by the participant."
+        },
+        "retoFITRegistrationId": {
+          "type": "string",
+          "description": "Reference to RetoFITRegistration. (Relationship: RetoFITRegistration 1:1 Participant)"
+        }
+      },
+      "required": [
+        "id",
+        "institutionalEmail",
+        "digitalCredentialQR"
+      ]
+    },
+    "CongressEvent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CongressEvent",
+      "type": "object",
+      "description": "Represents a specific event within the Semana de la Ingenieria 2025 congress, such as a ponencia, workshop, colloquium, or contest.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CongressEvent entity."
+        },
+        "eventType": {
+          "type": "string",
+          "description": "The type of event (e.g., Ponencia, Taller, Coloquio, Concurso)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the event."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the event."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "Date and time of the event.",
+          "format": "date-time"
+        },
+        "speakerId": {
+          "type": "string",
+          "description": "Reference to Speaker. (Relationship: Speaker 1:N CongressEvent)"
+        }
+      },
+      "required": [
+        "id",
+        "eventType",
+        "title",
+        "dateTime"
+      ]
+    },
+    "Speaker": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Speaker",
+      "type": "object",
+      "description": "Represents a speaker or facilitator at the Semana de la Ingenieria 2025 congress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Speaker entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the speaker."
+        },
+        "institution": {
+          "type": "string",
+          "description": "Institution the speaker belongs to."
+        },
+        "biography": {
+          "type": "string",
+          "description": "Short biography of the speaker."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the speaker's photo.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "institution"
+      ]
+    },
+    "Attendance": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attendance",
+      "type": "object",
+      "description": "Represents a record of a participant's attendance at a specific congress event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attendance entity."
+        },
+        "participantId": {
+          "type": "string",
+          "description": "Reference to Participant. (Relationship: Participant 1:N Attendance)"
+        },
+        "congressEventId": {
+          "type": "string",
+          "description": "Reference to CongressEvent. (Relationship: CongressEvent 1:N Attendance)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the attendance was recorded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "participantId",
+        "congressEventId",
+        "timestamp"
+      ]
+    },
+    "News": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "News",
+      "type": "object",
+      "description": "Represents a news item or announcement for the Semana de la Ingenieria 2025 congress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the News entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the news item."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the news item."
+        },
+        "publishDateTime": {
+          "type": "string",
+          "description": "Date and time when the news item was published.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "publishDateTime"
+      ]
+    },
+    "SurveyResponse": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SurveyResponse",
+      "type": "object",
+      "description": "Represents a participant's response to a survey regarding a congress event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SurveyResponse entity."
+        },
+        "participantId": {
+          "type": "string",
+          "description": "Reference to Participant. (Relationship: Participant 1:N SurveyResponse)"
+        },
+        "congressEventId": {
+          "type": "string",
+          "description": "Reference to CongressEvent. (Relationship: CongressEvent 1:N SurveyResponse)"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating given by the participant (e.g., stars)."
+        },
+        "comments": {
+          "type": "string",
+          "description": "Additional comments provided by the participant."
+        }
+      },
+      "required": [
+        "id",
+        "participantId",
+        "congressEventId"
+      ]
+    },
+    "LiveQuestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LiveQuestion",
+      "type": "object",
+      "description": "Represents a question submitted by a participant during a live session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LiveQuestion entity."
+        },
+        "participantId": {
+          "type": "string",
+          "description": "Reference to Participant. (Relationship: Participant 1:N LiveQuestion)"
+        },
+        "congressEventId": {
+          "type": "string",
+          "description": "Reference to CongressEvent. (Relationship: CongressEvent 1:N LiveQuestion)"
+        },
+        "questionText": {
+          "type": "string",
+          "description": "Text of the question submitted."
+        },
+        "votes": {
+          "type": "number",
+          "description": "Number of votes the question has received."
+        },
+        "isModerated": {
+          "type": "boolean",
+          "description": "Indicates if the question has been moderated by an administrator."
+        }
+      },
+      "required": [
+        "id",
+        "participantId",
+        "congressEventId",
+        "questionText"
+      ]
+    },
+    "RetoFITRegistration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RetoFITRegistration",
+      "type": "object",
+      "description": "Represents a participant's registration for the #RetoFIT event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RetoFITRegistration entity."
+        },
+        "participantId": {
+          "type": "string",
+          "description": "Reference to Participant. (Relationship: Participant 1:1 RetoFITRegistration)"
+        },
+        "registrationDateTime": {
+          "type": "string",
+          "description": "Date and time of the registration.",
+          "format": "date-time"
+        },
+        "adidasRunningLinkQR": {
+          "type": "string",
+          "description": "QR code linking to the official Adidas Running event page."
+        }
+      },
+      "required": [
+        "id",
+        "participantId",
+        "registrationDateTime",
+        "adidasRunningLinkQR"
+      ]
+    },
+    "Administrator": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Administrator",
+      "type": "object",
+      "description": "Represents an administrator user with access to administrative panels and functions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Administrator entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the administrator."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the administrator.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "roles_admin/{uid}",
+        "definition": {
+          "entityName": "Administrator",
+          "schema": {
+            "$ref": "#/backend/entities/Administrator"
+          },
+          "description": "Collection to store administrator roles. Document ID is the user's UID. Existence of a document grants admin privileges.",
+          "params": [
+            {
+              "name": "uid",
+              "description": "The Firebase Auth UID of the administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "users/{userId}",
+        "definition": {
+          "entityName": "Participant",
+          "schema": {
+            "$ref": "#/backend/entities/Participant"
+          },
+          "description": "Collection to store user profile data. User ID is the Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "users/{userId}/attendance/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": {
+            "$ref": "#/backend/entities/Attendance"
+          },
+          "description": "Collection to store attendance records for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "attendanceId",
+              "description": "The unique ID of the attendance record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "users/{userId}/surveyResponses/{surveyResponseId}",
+        "definition": {
+          "entityName": "SurveyResponse",
+          "schema": {
+            "$ref": "#/backend/entities/SurveyResponse"
+          },
+          "description": "Collection to store survey responses for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "surveyResponseId",
+              "description": "The unique ID of the survey response."
+            }
+          ]
+        }
+      },
+      {
+        "path": "users/{userId}/liveQuestions/{liveQuestionId}",
+        "definition": {
+          "entityName": "LiveQuestion",
+          "schema": {
+            "$ref": "#/backend/entities/LiveQuestion"
+          },
+          "description": "Collection to store live questions submitted by a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "liveQuestionId",
+              "description": "The unique ID of the live question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "users/{userId}/retoFITRegistrations/{retoFITRegistrationId}",
+        "definition": {
+          "entityName": "RetoFITRegistration",
+          "schema": {
+            "$ref": "#/backend/entities/RetoFITRegistration"
+          },
+          "description": "Collection to store RetoFIT registrations for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "retoFITRegistrationId",
+              "description": "The unique ID of the RetoFIT registration."
+            }
+          ]
+        }
+      },
+      {
+        "path": "news/{newsId}",
+        "definition": {
+          "entityName": "News",
+          "schema": {
+            "$ref": "#/backend/entities/News"
+          },
+          "description": "Collection to store news items.",
+          "params": [
+            {
+              "name": "newsId",
+              "description": "The unique ID of the news item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "congressEvents/{congressEventId}",
+        "definition": {
+          "entityName": "CongressEvent",
+          "schema": {
+            "$ref": "#/backend/entities/CongressEvent"
+          },
+          "description": "Collection to store congress events.",
+          "params": [
+            {
+              "name": "congressEventId",
+              "description": "The unique ID of the congress event."
+            }
+          ]
+        }
+      },
+      {
+        "path": "speakers/{speakerId}",
+        "definition": {
+          "entityName": "Speaker",
+          "schema": {
+            "$ref": "#/backend/entities/Speaker"
+          },
+          "description": "Collection to store speaker information.",
+          "params": [
+            {
+              "name": "speakerId",
+              "description": "The unique ID of the speaker."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure prioritizes security, scalability, and debuggability based on the provided entities and application requirements. It adheres to the core design principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), QAPs (Rules are not Filters), and Invariants.\n\n**Authorization Independence and QAPs:**\n\n*   **Administrators:** The `roles_admin/{uid}` collection enables role-based access control. The existence of a document with the user's `uid` in this collection grants administrative privileges. This approach avoids hierarchical dependencies and ensures atomic operations. QAPs are supported by using existence checks rather than content-based filtering in the security rules.\n*   **User-Owned Data:** The `/users/{userId}` path structure is used to store data directly owned by users, such as `participants`. This structure ensures that only the authenticated user (`request.auth.uid`) can access their own data. The `Attendance`, `SurveyResponse`, `LiveQuestion`, and `RetoFITRegistration` are located under `users/{userId}` to establish clear ownership and simplified security rules.\n*   **Collaborative Data:** The collaborative data model is implemented using Membership Maps. Since there is no collaborative data based on the data model, this is not explicitly used, but the strategy is ready for future collaborative features if needed.\n*   **News:** The `news` collection does not have any user-specific data. Therefore, it can be stored as a root-level collection without any ownership restrictions.\n*   **CongressEvents and Speakers:** The `congressEvents` and `speakers` collections are stored at the root level. An administrator will be responsible for managing these entities.\n\n**DBAC (Database-Based Access Control):**\n\n*   Administrator roles are stored in the `/roles_admin/{uid}` collection. This approach ensures that roles are managed directly within the database and simplifies security rules by relying solely on `request.auth.uid` and existence checks. This enhances security and simplifies access control logic.\n\n**Structural Segregation (Homogeneous Security Posture):**\n\n*   Each collection is designed to have a uniform security posture. For instance, all documents in `/users/{userId}/...` are owned by the user identified by `{userId}`, while documents in `/roles_admin/{uid}` indicate administrative privileges.\n\n**Invariants:**\n\n*   Ownership is strictly enforced through path-based rules (e.g., `/users/{userId}`).\n*   Timestamps (where applicable) can be validated in rules to ensure data integrity.\n\nThis structure allows for simple, robust, and easily debuggable security rules while adhering to the core design principles and strategy mandates."
+  }
+}

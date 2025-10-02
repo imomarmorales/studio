@@ -1,0 +1,233 @@
+/**
+ * @file Firebase Security Rules for Semana de la Ingenieria 2025
+ *
+ * @description This ruleset enforces a strict user-ownership model for user profiles and associated data,
+ * with administrator privileges granted based on the existence of a document in the `roles_admin` collection.
+ * Public read access is granted to news, congress events, and speaker information.
+ *
+ * Data Structure:
+ * - /roles_admin/{uid}: Documents indicate administrator privileges.
+ * - /users/{userId}: User profile data, owned by the user with ID {userId}.
+ * - /users/{userId}/attendance/{attendanceId}: Attendance records for user {userId}.
+ * - /users/{userId}/surveyResponses/{surveyResponseId}: Survey responses by user {userId}.
+ * - /users/{userId}/liveQuestions/{liveQuestionId}: Live questions submitted by user {userId}.
+ * - /users/{userId}/retoFITRegistrations/{retoFITRegistrationId}: RetoFIT registrations for user {userId}.
+ * - /news/{newsId}: Publicly readable news items.
+ * - /congressEvents/{congressEventId}: Publicly readable congress event information.
+ * - /speakers/{speakerId}: Publicly readable speaker information.
+ *
+ * Key Security Decisions:
+ * - Only authenticated users can access their own profile data and associated subcollections.
+ * - Administrators, as determined by their presence in the `roles_admin` collection, can manage congress events and speaker information.
+ * - Public read access is granted for news, congress events, and speaker data.
+ * - User listing is disallowed.
+ *
+ * Denormalization for Authorization:
+ * - Administrator status is determined by the presence of a document in `/roles_admin/{uid}`, avoiding complex queries.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Grants administrator privileges based on the existence of a document in this collection.
+     * @path /roles_admin/{uid}
+     * @allow (create) If the user's UID matches the document ID, allows creation.
+     * @allow (get) If the user's UID matches the document ID or the user is an admin, allows read.
+     * @allow (update) If the user is an admin, allows updates.
+     * @allow (delete) If the user is an admin, allows deletes.
+     * @deny (create) If the user's UID does not match the document ID, deny creation.
+     * @deny (get) If the user's UID does not match the document ID and the user is not an admin, deny read.
+     * @deny (update) If the user is not an admin, deny updates.
+     * @deny (delete) If the user is not an admin, deny deletes.
+     * @principle Grants administrative access based on user ID matching and administrator status.
+     */
+    match /roles_admin/{uid} {
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow get: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if false;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Manages user profile data.  Users can only create their own profile.
+     * @path /users/{userId}
+     * @allow (create) Allows creating a user document if the UID matches the document ID.
+     * @allow (get) Allows a user to get their own profile if the UID matches the document ID or the user is an admin.
+     * @allow (update) Allows a user to update their own profile if the UID matches the document ID or the user is an admin.
+     * @allow (delete) Allows a user to delete their own profile if the UID matches the document ID or the user is an admin.
+     * @deny (create) Denies creating a user document if the UID does not match the document ID.
+     * @deny (get) Denies getting a user profile if the UID does not match the document ID and the user is not an admin.
+     * @deny (update) Denies updating a user profile if the UID does not match the document ID and the user is not an admin.
+     * @deny (delete) Denies deleting a user profile if the UID does not match the document ID and the user is not an admin.
+     * @principle Enforces document ownership for user profiles and restricts write access to the owner or an admin.
+     */
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if false;
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Manages attendance records for a specific user. Only the user and admins can access their attendance data.
+     * @path /users/{userId}/attendance/{attendanceId}
+     * @allow (create) Allows creating attendance records if the user owns the parent user document or the user is an admin.
+     * @allow (get) Allows getting attendance records if the user owns the parent user document or the user is an admin.
+     * @allow (update) Allows updating attendance records if the user owns the parent user document or the user is an admin.
+     * @allow (delete) Allows deleting attendance records if the user owns the parent user document or the user is an admin.
+     * @deny (create) Denies creating attendance records if the user does not own the parent user document or the user is not an admin.
+     * @deny (get) Denies getting attendance records if the user does not own the parent user document and the user is not an admin.
+     * @deny (update) Denies updating attendance records if the user does not own the parent user document and the user is not an admin.
+     * @deny (delete) Denies deleting attendance records if the user does not own the parent user document and the user is not an admin.
+     * @principle Enforces document ownership for attendance records and restricts write access to the owner or an admin.
+     */
+    match /users/{userId}/attendance/{attendanceId} {
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Manages survey responses for a specific user. Only the user and admins can access their survey responses.
+     * @path /users/{userId}/surveyResponses/{surveyResponseId}
+     * @allow (create) Allows creating survey responses if the user owns the parent user document or the user is an admin.
+     * @allow (get) Allows getting survey responses if the user owns the parent user document or the user is an admin.
+     * @allow (update) Allows updating survey responses if the user owns the parent user document or the user is an admin.
+     * @allow (delete) Allows deleting survey responses if the user owns the parent user document or the user is an admin.
+     * @deny (create) Denies creating survey responses if the user does not own the parent user document or the user is not an admin.
+     * @deny (get) Denies getting survey responses if the user does not own the parent user document and the user is not an admin.
+     * @deny (update) Denies updating survey responses if the user does not own the parent user document and the user is not an admin.
+     * @deny (delete) Denies deleting survey responses if the user does not own the parent user document and the user is not an admin.
+     * @principle Enforces document ownership for survey responses and restricts write access to the owner or an admin.
+     */
+    match /users/{userId}/surveyResponses/{surveyResponseId} {
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Manages live questions submitted by a specific user. Only the user and admins can access their live questions.
+     * @path /users/{userId}/liveQuestions/{liveQuestionId}
+     * @allow (create) Allows creating live questions if the user owns the parent user document or the user is an admin.
+     * @allow (get) Allows getting live questions if the user owns the parent user document or the user is an admin.
+     * @allow (update) Allows updating live questions if the user owns the parent user document or the user is an admin.
+     * @allow (delete) Allows deleting live questions if the user owns the parent user document or the user is an admin.
+     * @deny (create) Denies creating live questions if the user does not own the parent user document or the user is not an admin.
+     * @deny (get) Denies getting live questions if the user does not own the parent user document and the user is not an admin.
+     * @deny (update) Denies updating live questions if the user does not own the parent user document and the user is not an admin.
+     * @deny (delete) Denies deleting live questions if the user does not own the parent user document and the user is not an admin.
+     * @principle Enforces document ownership for live questions and restricts write access to the owner or an admin.
+     */
+    match /users/{userId}/liveQuestions/{liveQuestionId} {
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Manages RetoFIT registrations for a specific user. Only the user and admins can access their RetoFIT registrations.
+     * @path /users/{userId}/retoFITRegistrations/{retoFITRegistrationId}
+     * @allow (create) Allows creating RetoFIT registrations if the user owns the parent user document or the user is an admin.
+     * @allow (get) Allows getting RetoFIT registrations if the user owns the parent user document or the user is an admin.
+     * @allow (update) Allows updating RetoFIT registrations if the user owns the parent user document or the user is an admin.
+     * @allow (delete) Allows deleting RetoFIT registrations if the user owns the parent user document or the user is an admin.
+     * @deny (create) Denies creating RetoFIT registrations if the user does not own the parent user document or the user is not an admin.
+     * @deny (get) Denies getting RetoFIT registrations if the user does not own the parent user document and the user is not an admin.
+     * @deny (update) Denies updating RetoFIT registrations if the user does not own the parent user document and the user is not an admin.
+     * @deny (delete) Denies deleting RetoFIT registrations if the user does not own the parent user document and the user is not an admin.
+     * @principle Enforces document ownership for RetoFIT registrations and restricts write access to the owner or an admin.
+     */
+    match /users/{userId}/retoFITRegistrations/{retoFITRegistrationId} {
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Allows public read access to news items, while restricting write access to admins only.
+     * @path /news/{newsId}
+     * @allow (get) Allows anyone to get news items.
+     * @allow (list) Allows anyone to list news items.
+     * @allow (create) Allows creating news items if the user is an admin.
+     * @allow (update) Allows updating news items if the user is an admin.
+     * @allow (delete) Allows deleting news items if the user is an admin.
+     * @deny (create) Denies creating news items if the user is not an admin.
+     * @deny (update) Denies updating news items if the user is not an admin.
+     * @deny (delete) Denies deleting news items if the user is not an admin.
+     * @principle Grants public read access to news items and restricts write access to administrators.
+     */
+    match /news/{newsId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Allows public read access to congress events, while restricting write access to admins only.
+     * @path /congressEvents/{congressEventId}
+     * @allow (get) Allows anyone to get congress events.
+     * @allow (list) Allows anyone to list congress events.
+     * @allow (create) Allows creating congress events if the user is an admin.
+     * @allow (update) Allows updating congress events if the user is an admin.
+     * @allow (delete) Allows deleting congress events if the user is an admin.
+     * @deny (create) Denies creating congress events if the user is not an admin.
+     * @deny (update) Denies updating congress events if the user is not an admin.
+     * @deny (delete) Denies deleting congress events if the user is not an admin.
+     * @principle Grants public read access to congress events and restricts write access to administrators.
+     */
+    match /congressEvents/{congressEventId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Allows public read access to speaker information, while restricting write access to admins only.
+     * @path /speakers/{speakerId}
+     * @allow (get) Allows anyone to get speaker information.
+     * @allow (list) Allows anyone to list speaker information.
+     * @allow (create) Allows creating speaker information if the user is an admin.
+     * @allow (update) Allows updating speaker information if the user is an admin.
+     * @allow (delete) Allows deleting speaker information if the user is an admin.
+     * @deny (create) Denies creating speaker information if the user is not an admin.
+     * @deny (update) Denies updating speaker information if the user is not an admin.
+     * @deny (delete) Denies deleting speaker information if the user is not an admin.
+     * @principle Grants public read access to speaker information and restricts write access to administrators.
+     */
+    match /speakers/{speakerId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+  }
+}
