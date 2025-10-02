@@ -31,7 +31,7 @@ export function AdminSidebar() {
       <SidebarContent>
         <SidebarMenu>
             <SidebarMenuItem>
-                <Link href="/dashboard" legacyBehavior passHref>
+                <Link href="/dashboard">
                     <SidebarMenuButton
                         isActive={pathname.startsWith('/dashboard')}
                         tooltip="Ir al Dashboard"
@@ -51,7 +51,7 @@ export function AdminSidebar() {
             </SidebarMenuItem>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={`/admin${item.href}`} legacyBehavior passHref>
+              <Link href={`/admin${item.href}`}>
                 <SidebarMenuButton
                   isActive={pathname.startsWith(`/admin${item.href}`)}
                   tooltip={item.label}
@@ -67,7 +67,7 @@ export function AdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/" legacyBehavior passHref>
+            <Link href="/">
               <SidebarMenuButton tooltip="Cerrar Sesión">
                 <LogOut />
                 <span>Cerrar Sesión</span>
