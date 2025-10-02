@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Shield, Users, Home, LogOut } from 'lucide-react';
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { href: '/admin/users', label: 'Gestionar Usuarios', icon: Users },
+  { href: '/users', label: 'Gestionar Usuarios', icon: Users },
   // Add more admin links here
 ];
 
@@ -36,10 +37,8 @@ export function AdminSidebar() {
                     tooltip="Ir al Dashboard"
                 >
                     <Link href="/dashboard">
-                      <>
                         <Home />
                         <span>Dashboard Usuario</span>
-                      </>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
@@ -55,14 +54,12 @@ export function AdminSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith(item.href)}
+                isActive={pathname.startsWith(`/admin${item.href}`)}
                 tooltip={item.label}
               >
-                <Link href={item.href}>
-                  <>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </>
+                <Link href={`/admin${item.href}`}>
+                  <item.icon />
+                  <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -74,10 +71,8 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Cerrar Sesión">
               <Link href="/">
-                <>
-                  <LogOut />
-                  <span>Cerrar Sesión</span>
-                </>
+                <LogOut />
+                <span>Cerrar Sesión</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

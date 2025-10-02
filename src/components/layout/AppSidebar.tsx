@@ -67,10 +67,8 @@ export function AppSidebar() {
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
-                    <>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </>
+                    <item.icon />
+                    <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -94,10 +92,8 @@ export function AppSidebar() {
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
-                    <>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </>
+                    <item.icon />
+                    <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -110,10 +106,8 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Cerrar Sesión">
               <Link href="/">
-                <>
-                  <LogOut />
-                  <span>Cerrar Sesión</span>
-                </>
+                <LogOut />
+                <span>Cerrar Sesión</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
