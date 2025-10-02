@@ -1,8 +1,25 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Countdown } from "./Countdown";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import dynamic from 'next/dynamic';
+
+const DynamicCountdown = dynamic(() => import('./Countdown').then(mod => mod.Countdown), {
+  ssr: false,
+  loading: () => (
+    <div className="flex justify-center space-x-2 md:space-x-4" aria-label="Cargando cuenta regresiva">
+      {['Días', 'Horas', 'Minutos', 'Segundos'].map((label) => (
+        <div key={label} className="text-center bg-white/10 backdrop-blur-sm p-4 rounded-lg w-24">
+          <span className="text-3xl md:text-5xl font-bold font-headline">00</span>
+          <p className="text-xs md:text-sm uppercase tracking-widest">{label}</p>
+        </div>
+      ))}
+    </div>
+  )
+});
+
 
 export function Hero() {
   const heroImage = PlaceHolderImages.find(p => p.id === "hero-background");
@@ -29,7 +46,7 @@ export function Hero() {
         </p>
         
         <div className="mt-8">
-          <Countdown />
+          <DynamicCountdown />
         </div>
 
         <div className="mt-10">

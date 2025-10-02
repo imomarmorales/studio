@@ -29,14 +29,14 @@ const calculateTimeLeft = (): TimeLeft | null => {
 };
 
 export function Countdown() {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     // Set initial time on client mount
-    setTimeLeft(calculateTimeLeft());
+    setTimeLeft(calculateTimeLeft() || { days: 0, hours: 0, minutes: 0, seconds: 0 });
 
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
+      setTimeLeft(calculateTimeLeft() || { days: 0, hours: 0, minutes: 0, seconds: 0 });
     }, 1000);
 
     // Clear interval on cleanup
@@ -44,10 +44,10 @@ export function Countdown() {
   }, []);
 
   const countdownItems = [
-    { label: 'Días', value: timeLeft?.days ?? 0 },
-    { label: 'Horas', value: timeLeft?.hours ?? 0 },
-    { label: 'Minutos', value: timeLeft?.minutes ?? 0 },
-    { label: 'Segundos', value: timeLeft?.seconds ?? 0 }
+    { label: 'Días', value: timeLeft.days },
+    { label: 'Horas', value: timeLeft.hours },
+    { label: 'Minutos', value: timeLeft.minutes },
+    { label: 'Segundos', value: timeLeft.seconds }
   ];
 
   return (
@@ -55,7 +55,7 @@ export function Countdown() {
       {countdownItems.map((item, i) => (
         <div key={i} className="text-center bg-white/10 backdrop-blur-sm p-4 rounded-lg w-24">
           <span className="text-3xl md:text-5xl font-bold font-headline">
-            {timeLeft ? String(item.value).padStart(2, '0') : '00'}
+            {String(item.value).padStart(2, '0')}
           </span>
           <p className="text-xs md:text-sm uppercase tracking-widest">{item.label}</p>
         </div>
