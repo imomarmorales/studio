@@ -25,7 +25,7 @@ export function Hero() {
           Semana de la Ingeniería 2025
         </h1>
         <p className="mt-4 text-lg md:text-xl font-body text-primary-foreground/90 drop-shadow-md">
-          Facultad de Ingeniería Tampico, UAT | 18 - 22 de Agosto, 2025
+          Facultad de Ingeniería Tampico, UAT | 18, 19 y 20 de Noviembre del 2025
         </p>
         
         <div className="mt-8">

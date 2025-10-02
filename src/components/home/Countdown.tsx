@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const eventDate = new Date("2025-08-18T09:00:00");
+const eventDate = new Date("2025-11-18T09:00:00");
 
 export function Countdown() {
   const [timeLeft, setTimeLeft] = useState({
