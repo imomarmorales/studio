@@ -31,16 +31,15 @@ export function AdminSidebar() {
       <SidebarContent>
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/dashboard')}
-                    tooltip="Ir al Dashboard"
-                >
-                    <Link href="/dashboard">
+                <Link href="/dashboard" legacyBehavior passHref>
+                    <SidebarMenuButton
+                        isActive={pathname.startsWith('/dashboard')}
+                        tooltip="Ir al Dashboard"
+                    >
                         <Home />
                         <span>Dashboard Usuario</span>
-                    </Link>
-                </SidebarMenuButton>
+                    </SidebarMenuButton>
+                </Link>
             </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
@@ -52,16 +51,15 @@ export function AdminSidebar() {
             </SidebarMenuItem>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(`/admin${item.href}`)}
-                tooltip={item.label}
-              >
-                <Link href={`/admin${item.href}`}>
+              <Link href={`/admin${item.href}`} legacyBehavior passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(`/admin${item.href}`)}
+                  tooltip={item.label}
+                >
                   <item.icon />
                   <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -69,12 +67,12 @@ export function AdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Cerrar Sesión">
-              <Link href="/">
+            <Link href="/" legacyBehavior passHref>
+              <SidebarMenuButton tooltip="Cerrar Sesión">
                 <LogOut />
                 <span>Cerrar Sesión</span>
-              </Link>
-            </SidebarMenuButton>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

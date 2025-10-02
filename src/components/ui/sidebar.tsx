@@ -567,10 +567,7 @@ const SidebarMenuButton = React.forwardRef<
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
       >
-        <div className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-sidebar-primary p-2.5 transition-all duration-200 group-hover/button:p-4 group-data-[active=true]/button:p-4" />
-        <div className="relative z-20 flex items-center gap-2 transition-colors duration-200 group-data-[active=true]/button:text-sidebar-primary-foreground">
-          {children}
-        </div>
+        {children}
       </Comp>
     )
 
@@ -768,5 +765,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
-    
