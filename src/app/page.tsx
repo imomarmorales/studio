@@ -1,3 +1,10 @@
+import { Hero } from "@/components/home/Hero";
+import { PublicLayout } from "@/components/layout/PublicLayout";
+
 export default function Home() {
-  return <></>;
+  return (
+    <PublicLayout>
+      <Hero />
+    </PublicLayout>
+  );
 }
