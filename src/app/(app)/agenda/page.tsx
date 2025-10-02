@@ -37,7 +37,7 @@ export default function AgendaPage() {
               <CardTitle>Talleres</CardTitle>
               <CardDescription>
                 Contenido de talleres próximamente.
-              </-carddescription>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
