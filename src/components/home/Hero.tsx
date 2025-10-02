@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import dynamic from 'next/dynamic';
 
 const DynamicCountdown = dynamic(() => import('./Countdown').then(mod => mod.Countdown), {
@@ -22,20 +21,15 @@ const DynamicCountdown = dynamic(() => import('./Countdown').then(mod => mod.Cou
 
 
 export function Hero() {
-  const heroImage = PlaceHolderImages.find(p => p.id === "hero-background");
-
   return (
     <section className="relative w-full h-[80vh] min-h-[500px] flex items-center justify-center text-center text-white">
-      {heroImage && (
-        <Image
-          src={heroImage.imageUrl}
-          alt={heroImage.description}
-          fill
-          className="object-cover"
-          priority
-          data-ai-hint={heroImage.imageHint}
-        />
-      )}
+      <Image
+        src="/hero-background.jpeg"
+        alt="Fondo de la Semana de la Ingeniería"
+        fill
+        className="object-cover"
+        priority
+      />
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 p-4 max-w-4xl mx-auto">
         <h1 className="text-4xl font-headline font-bold md:text-6xl drop-shadow-lg">
