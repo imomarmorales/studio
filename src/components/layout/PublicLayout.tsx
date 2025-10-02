@@ -18,11 +18,12 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           priority
         />
       </header>
-      {/* FirebaseClientProvider envuelve Header y children para darles contexto */}
-      <FirebaseClientProvider>
-        <Header />
-        <main className="flex-grow">{children}</main>
-      </FirebaseClientProvider>
+      <Header />
+      <main className="flex-grow">
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
+      </main>
       <Footer />
     </div>
   );
