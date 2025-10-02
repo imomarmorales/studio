@@ -36,8 +36,10 @@ export function AdminSidebar() {
                     tooltip="Ir al Dashboard"
                 >
                     <Link href="/dashboard">
-                    <Home />
-                    <span>Dashboard Usuario</span>
+                      <>
+                        <Home />
+                        <span>Dashboard Usuario</span>
+                      </>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
@@ -57,8 +59,10 @@ export function AdminSidebar() {
                 tooltip={item.label}
               >
                 <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
+                  <>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -70,8 +74,10 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Cerrar Sesión">
               <Link href="/">
-                <LogOut />
-                <span>Cerrar Sesión</span>
+                <>
+                  <LogOut />
+                  <span>Cerrar Sesión</span>
+                </>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
