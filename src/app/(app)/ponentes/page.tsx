@@ -20,7 +20,7 @@ export default function PonentesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {speakers.map((speaker) => (
           <Card key={speaker.id} className="text-center">
-            <CardHeader>
+            <CardHeader className="items-center">
                 {speakerImage && (
                     <Image
                         src={speakerImage.imageUrl}
@@ -31,9 +31,9 @@ export default function PonentesPage() {
                         data-ai-hint={speakerImage.imageHint}
                     />
                 )}
+                <CardTitle className="font-headline text-lg pt-4">{speaker.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardTitle className="font-headline text-lg">{speaker.name}</CardTitle>
               <p className="text-sm text-muted-foreground">{speaker.institution}</p>
               <p className="mt-4 text-sm">Biografía y resumen de ponencia próximamente.</p>
             </CardContent>
