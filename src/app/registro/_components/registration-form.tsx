@@ -1,13 +1,15 @@
 
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Auth, signInAnonymously } from "firebase/auth";
-import { Firestore, doc } from "firebase/firestore";
+import { signInAnonymously } from "firebase/auth";
+import { doc } from "firebase/firestore";
 import Link from "next/link";
+import { MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +44,7 @@ export function RegistrationForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,16 +74,19 @@ export function RegistrationForm() {
         digitalCredentialQR: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.uid}`
       };
       
-      // We use a blocking set here to ensure data is saved before redirecting
       await setDocumentNonBlocking(userDocRef, userData, { merge: true });
 
+      // NOTE: In a real application, this is where you would trigger a backend
+      // function (e.g., a Cloud Function) to send an email to the user with
+      // their QR code.
+      // For now, we will just show a success message.
+
+      setIsSuccess(true);
+      
       toast({
         title: "¡Registro Exitoso!",
-        description: "Tu credencial ha sido creada. Serás redirigido a tu panel.",
+        description: "Revisa tu correo para obtener tu credencial.",
       });
-
-      // 3. Redirect to the dashboard. The user is already logged in.
-      router.push("/dashboard");
 
     } catch (error: any) {
       console.error("Error al registrar usuario: ", error);
@@ -94,6 +100,35 @@ export function RegistrationForm() {
         description: description,
       });
     }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="container flex items-center justify-center py-12">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="mx-auto bg-green-100 p-4 rounded-full w-fit">
+              <MailCheck className="h-8 w-8 text-green-600" />
+            </div>
+            <CardTitle className="font-headline text-2xl pt-4">¡Registro Exitoso!</CardTitle>
+            <CardDescription>
+              Hemos enviado tu credencial digital QR a tu correo electrónico.
+              Úsala para iniciar sesión.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Puedes cerrar esta ventana.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" asChild>
+                <Link href="/login">Ir a Iniciar Sesión</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (

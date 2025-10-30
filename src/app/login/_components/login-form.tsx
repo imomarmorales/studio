@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Auth, signInWithCustomToken } from "firebase/auth";
+import { signInAnonymously } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,24 +34,6 @@ const formSchema = z.object({
   qrData: z.string().min(10, { message: "El código de la credencial no es válido." }),
 });
 
-// A mock function to simulate fetching a custom token from a backend.
-// In a real app, this would be a secure call to a server function.
-const getCustomTokenForUid = async (uid: string): Promise<string> => {
-    // SECURITY WARNING: This is a mock function for demonstration purposes.
-    // In a production environment, you MUST NOT expose a way to generate tokens on the client.
-    // This logic MUST live on a secure server (e.g., Cloud Function) that verifies
-    // the request's authenticity before creating and returning a token.
-    console.warn("Generating custom token on the client. This is insecure and for development only.");
-    
-    // This is a simplified simulation. A real implementation would require the Firebase Admin SDK on a server.
-    // Since we cannot run Admin SDK here, we'll throw an error to guide the developer.
-    
-    // We will just use the UID as the token for this mock. This won't actually work.
-    // We are now just going to sign in anonymously as that user.
-    return uid;
-};
-
-
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -67,7 +49,6 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) return;
     
-    // In our passwordless setup, the QR code contains the UID.
     const uid = values.qrData;
 
     toast({
@@ -76,20 +57,27 @@ export function LoginForm() {
     });
 
     try {
-        // Since we cannot securely generate a custom token on the client,
-        // we'll simulate the login by signing out any current anonymous user
-        // and then just re-directing. The actual auth state won't change
-        // to the new user without a proper custom token.
-        // For now, we will just assume the user is logging in for the first time.
-        // This is a limitation of the current client-only environment.
+        // This is a placeholder for a secure custom token validation
+        // For this passwordless flow, we assume the UID from the QR is valid
+        // and sign the user in. A robust implementation would involve a server
+        // validating the UID against a database before creating a custom token.
         
-        // This is where you'd use the custom token:
-        // const customToken = await getCustomTokenForUid(uid);
-        // await signInWithCustomToken(auth, customToken);
+        // Since we are creating anonymous users, we need to sign out any *current*
+        // anonymous user before we can "sign in" as the new user.
+        // A full custom token flow would handle this more gracefully.
+        if (auth.currentUser) {
+            await auth.signOut();
+        }
 
+        // We can't *actually* sign in as another user with just their UID on the client.
+        // This simulates the intended behavior. The user is already "logged in"
+        // anonymously from the registration step. Logging out and trying to log
+        // back in with this flow won't work without a secure custom token backend.
+        
+        // For demonstration, we'll just redirect.
         toast({
-            title: "Función no implementada",
-            description: "El inicio de sesión real con QR requiere un backend seguro. Redirigiendo al dashboard..."
+            title: "Inicio de Sesión Simulado",
+            description: "Redirigiendo al dashboard. El inicio de sesión real requiere un backend."
         });
 
       // We are just navigating, not truly authenticating as the scanned user.
@@ -114,7 +102,7 @@ export function LoginForm() {
           </div>
           <CardTitle className="font-headline text-2xl pt-4">Iniciar Sesión con QR</CardTitle>
           <CardDescription>
-            Pega el contenido de tu QR para acceder.
+            Pega el contenido de tu credencial digital para acceder.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -127,7 +115,7 @@ export function LoginForm() {
                   <FormItem>
                     <FormLabel>Código de Credencial Digital</FormLabel>
                     <FormControl>
-                      <Input placeholder="Pega el código de tu QR aquí..." {...field} />
+                      <Input placeholder="Pega el código aquí..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
