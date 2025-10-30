@@ -34,8 +34,8 @@ import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre completo es requerido." }),
-  email: z.string().email({ message: "Por favor, ingresa un correo válido." }).refine(email => email.endsWith('.uat.edu.mx'), {
-    message: "Solo se permiten correos institucionales de la UAT."
+  email: z.string().email({ message: "Por favor, ingresa un correo válido." }).refine(email => email.endsWith('@alumnos.uat.edu.mx'), {
+    message: "Solo se permiten correos institucionales de alumno (@alumnos.uat.edu.mx)."
   }),
 });
 
@@ -74,7 +74,7 @@ export function RegistrationForm() {
         digitalCredentialQR: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.uid}`
       };
       
-      await setDocumentNonBlocking(userDocRef, userData, { merge: true });
+      setDocumentNonBlocking(userDocRef, userData, { merge: true });
 
       // NOTE: In a real application, this is where you would trigger a backend
       // function (e.g., a Cloud Function) to send an email to the user with
@@ -112,8 +112,8 @@ export function RegistrationForm() {
             </div>
             <CardTitle className="font-headline text-2xl pt-4">¡Registro Exitoso!</CardTitle>
             <CardDescription>
-              Hemos enviado tu credencial digital QR a tu correo electrónico.
-              Úsala para iniciar sesión.
+              Hemos simulado el envío de tu credencial digital QR a tu correo.
+              En una app real, aquí recibirías tu código.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -163,7 +163,7 @@ export function RegistrationForm() {
                   <FormItem>
                     <FormLabel>Correo Institucional</FormLabel>
                     <FormControl>
-                      <Input placeholder="alumno@uat.edu.mx" {...field} />
+                      <Input placeholder="a2233336160@alumnos.uat.edu.mx" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
