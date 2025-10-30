@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Auth, createUserWithEmailAndPassword } from "firebase/auth";
+import { Auth, signInAnonymously } from "firebase/auth";
 import { Firestore, doc } from "firebase/firestore";
 import Link from "next/link";
 
@@ -37,16 +37,6 @@ const formSchema = z.object({
   }),
 });
 
-const generatePassword = () => {
-  const length = 12;
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
-  let password = "";
-  for (let i = 0, n = charset.length; i < n; ++i) {
-    password += charset.charAt(Math.floor(Math.random() * n));
-  }
-  return password;
-};
-
 export function RegistrationForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -65,12 +55,13 @@ export function RegistrationForm() {
     if (!auth || !firestore) return;
 
     const { fullName, email } = values;
-    const password = generatePassword();
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // 1. Sign in anonymously to get a new user credential
+      const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
 
+      // 2. Save user data to Firestore with the new UID
       const userDocRef = doc(firestore, "users", user.uid);
       const userData = {
         name: fullName,
@@ -80,20 +71,27 @@ export function RegistrationForm() {
         digitalCredentialQR: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.uid}`
       };
       
-      setDocumentNonBlocking(userDocRef, userData, { merge: true });
+      // We use a blocking set here to ensure data is saved before redirecting
+      await setDocumentNonBlocking(userDocRef, userData, { merge: true });
 
       toast({
         title: "¡Registro Exitoso!",
-        description: "Serás redirigido a tu panel de control.",
+        description: "Tu credencial ha sido creada. Serás redirigido a tu panel.",
       });
 
+      // 3. Redirect to the dashboard. The user is already logged in.
       router.push("/dashboard");
+
     } catch (error: any) {
       console.error("Error al registrar usuario: ", error);
+      let description = "No se pudo completar el registro. Inténtalo de nuevo.";
+      if (error.code === 'auth/email-already-in-use') {
+        description = "Este correo electrónico ya está en uso. Intenta iniciar sesión."
+      }
       toast({
         variant: "destructive",
         title: "Error en el registro",
-        description: error.message || "No se pudo completar el registro. Inténtalo de nuevo.",
+        description: description,
       });
     }
   }
@@ -144,7 +142,7 @@ export function RegistrationForm() {
           <div className="mt-4 text-center text-sm">
             ¿Ya tienes una cuenta?{" "}
             <Link href="/login" className="underline text-primary">
-              Inicia sesión
+              Inicia sesión con tu QR
             </Link>
           </div>
         </CardContent>
