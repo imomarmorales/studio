@@ -48,7 +48,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" aria-label="Navegación Principal">
       <SidebarHeader>
         <Logo />
       </SidebarHeader>
