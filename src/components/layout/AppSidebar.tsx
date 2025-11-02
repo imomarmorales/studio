@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -9,6 +10,7 @@ import {
   Trophy,
   Users,
   Shield,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -25,6 +27,7 @@ import {
 
 const mainMenuItems = [
   { href: '/dashboard', label: 'Eventos', icon: Home },
+  { href: '/perfil', label: 'Mi Perfil', icon: User },
   { href: '/ponentes', label: 'Ponentes', icon: Users },
   { href: '/ranking', label: 'Ranking', icon: Trophy },
   { href: '/noticias', label: 'Noticias', icon: Newspaper },
