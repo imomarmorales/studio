@@ -1,7 +1,7 @@
 'use client';
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import Image from "next/image";
 import { Crown, Gem } from "lucide-react";
@@ -83,18 +83,14 @@ const RankingListSkeleton = () => (
 
 export default function RankingPage() {
   const firestore = useFirestore();
-  const { user, isUserLoading: isAuthLoading } = useUser();
 
   const usersQuery = useMemoFirebase(() => {
-    // Wait for auth to resolve and firestore to be available
-    if (isAuthLoading || !firestore) return null;
+    if (!firestore) return null;
     return collection(firestore, 'users');
-  }, [firestore, isAuthLoading]);
+  }, [firestore]);
 
-  const { data: users, isLoading: isLoadingUsers } = useCollection<Omit<Participant, 'id'>>(usersQuery);
+  const { data: users, isLoading } = useCollection<Omit<Participant, 'id'>>(usersQuery);
   
-  const isLoading = isAuthLoading || isLoadingUsers;
-
   const sortedUsers = users ? [...users].sort((a, b) => (b.points || 0) - (a.points || 0)) : [];
   
   const topThree = sortedUsers.slice(0, 3);
@@ -140,3 +136,5 @@ export default function RankingPage() {
     </div>
   );
 }
+
+    

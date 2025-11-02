@@ -45,17 +45,16 @@ service cloud.firestore {
     match /roles_admin/{uid} {
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow get: if isSignedIn() && (request.auth.uid == uid || isAdmin());
-      allow list: if false;
+      allow list: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
     /**
-     * @description Manages user profile data.  Users can only create their own profile.
+     * @description Manages user profile data. Users can only create their own profile.
      * @path /users/{userId}
      * @allow (create) Allows creating a user document if the UID matches the document ID.
      * @allow (get) Allows a user to get their own profile if the UID matches the document ID or the user is an admin.
-     * @allow (list) Allows authenticated users to list all users for ranking and admin purposes.
      * @allow (update) Allows a user to update their own profile if the UID matches the document ID or the user is an admin.
      * @allow (delete) Allows a user to delete their own profile if the UID matches the document ID or the user is an admin.
      * @deny (create) Denies creating a user document if the UID does not match the document ID.
@@ -67,10 +66,19 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if isSignedIn();
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
+
+    /**
+     * @description Allows authenticated users to list all users for ranking and admin purposes.
+     * @path /users
+     * @principle Grants list access to any signed-in user.
+     */
+    match /users {
+        allow list: if isSignedIn();
+    }
+
 
     /**
      * @description Manages attendance records for a specific user. Only the user and admins can access their attendance data.
@@ -232,3 +240,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
