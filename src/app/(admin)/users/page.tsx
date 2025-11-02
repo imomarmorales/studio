@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, ShieldCheck, User } from 'lucide-react';
+import { MoreHorizontal, ShieldCheck, Star, User } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -79,6 +79,7 @@ export default function ManageUsersPage() {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Puntos</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -89,6 +90,7 @@ export default function ManageUsersPage() {
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                 </TableRow>
@@ -97,6 +99,12 @@ export default function ManageUsersPage() {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <div className='flex items-center'>
+                    <Star className="mr-2 h-4 w-4 text-yellow-500" />
+                    {user.points || 0}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Badge variant={getRole(user.id) === 'admin' ? 'default' : 'secondary'}>
                      {getRole(user.id) === 'admin' ? <ShieldCheck className="mr-1 h-3 w-3"/> : <User className="mr-1 h-3 w-3"/>}
@@ -112,6 +120,9 @@ export default function ManageUsersPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                       <DropdownMenuItem>
+                        Editar Puntos (Próximamente)
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => getRole(user.id) === 'admin' ? removeAdminRole(user.id) : setAdminRole(user.id)}>
                         {getRole(user.id) === 'admin' ? 'Quitar Admin' : 'Hacer Administrador'}
                       </DropdownMenuItem>

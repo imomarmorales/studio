@@ -26,12 +26,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
-import { QrCode } from "lucide-react";
-import { signInWithCustomToken } from "firebase/auth";
+import { Shield } from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
-// The "QR Code" is just the user's UID. This schema validates that it's not empty.
 const formSchema = z.object({
-  qrData: z.string().min(10, { message: "El código de la credencial no es válido." }),
+  email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
+  password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
 export function LoginForm() {
@@ -42,63 +42,38 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      qrData: "",
+      email: "",
+      password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) return;
+
+    // Admin login simulation
+    if (values.email === 'admin' && values.password === '12345') {
+       toast({
+        title: "¡Bienvenido, Admin!",
+        description: "Has iniciado sesión como administrador.",
+      });
+      router.push("/admin/users");
+      return;
+    }
     
-    const uid = values.qrData;
-
-    toast({
-      title: "Procesando credencial...",
-      description: "Validando tu identidad.",
-    });
-
     try {
-        // This is a placeholder for a secure custom token validation
-        // For this passwordless flow, we assume the UID from the QR is valid
-        // and sign the user in. A robust implementation would involve a server
-        // validating the UID against a database before creating a custom token.
-        
-        // Since we are using anonymous auth, we can't just "log in" as another
-        // user. We would need a custom token. For this demo, we'll simulate
-        // the effect by redirecting to the dashboard, assuming a real app
-        // would handle custom token exchange here.
-        
-        if (auth.currentUser?.uid === uid) {
-          toast({
-            title: "Sesión ya iniciada",
-            description: "Ya has iniciado sesión con esta credencial."
-          });
-          router.push("/dashboard");
-          return;
-        }
-
-        // In a real app, you would:
-        // 1. Send the `uid` to your backend.
-        // 2. Your backend verifies it's a valid user.
-        // 3. Your backend uses the Firebase Admin SDK to create a custom token: `admin.auth().createCustomToken(uid)`
-        // 4. Your backend sends the custom token back to the client.
-        // 5. The client signs in with the token: `signInWithCustomToken(auth, customToken)`
-        
-        // For this prototype, we'll show a message and redirect.
-        toast({
-            title: "Inicio de Sesión Simulado",
-            description: "Redirigiendo al dashboard. La autenticación real en un nuevo dispositivo requiere un backend."
-        });
-
-      // We are just navigating, not truly authenticating as the scanned user.
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "¡Bienvenido de vuelta!",
+      });
       router.push("/dashboard");
 
-    } catch (error: any)
-{
-      console.error("Error al iniciar sesión con QR:", error);
+    } catch (error: any) {
+      console.error("Error al iniciar sesión:", error);
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
-        description: "La credencial no es válida o no se pudo autenticar. Inténtalo de nuevo.",
+        description: "Las credenciales son incorrectas o el usuario no existe. Por favor, regístrate primero.",
       });
     }
   }
@@ -108,11 +83,11 @@ export function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-            <QrCode className="h-8 w-8 text-primary" />
+            <Shield className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="font-headline text-2xl pt-4">Iniciar Sesión</CardTitle>
           <CardDescription>
-            Pega el código de tu credencial digital para acceder en un nuevo dispositivo.
+            Accede a tu cuenta o usa las credenciales de administrador.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,12 +95,25 @@ export function LoginForm() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="qrData"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Código de Credencial Digital</FormLabel>
+                    <FormLabel>Correo o Usuario</FormLabel>
                     <FormControl>
-                      <Input placeholder="Pega el código aquí..." {...field} />
+                      <Input placeholder="tu@correo.com o admin" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signInAnonymously } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import Link from "next/link";
 
@@ -16,7 +16,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
+  CardFooter
 } from "@/components/ui/card";
 import {
   Form,
@@ -33,9 +33,8 @@ import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre completo es requerido." }),
-  email: z.string().email({ message: "Por favor, ingresa un correo válido." }).refine(email => email.endsWith('@alumnos.uat.edu.mx'), {
-    message: "Solo se permiten correos institucionales de alumno (@alumnos.uat.edu.mx)."
-  }),
+  email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
 });
 
 export function RegistrationForm() {
@@ -49,38 +48,36 @@ export function RegistrationForm() {
     defaultValues: {
       fullName: "",
       email: "",
+      password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth || !firestore) return;
 
-    const { fullName, email } = values;
+    const { fullName, email, password } = values;
 
     try {
-      // 1. Sign in anonymously to get a new user credential
-      const userCredential = await signInAnonymously(auth);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Save user data to Firestore with the new UID
       const userDocRef = doc(firestore, "users", user.uid);
       const userData = {
+        id: user.uid,
         name: fullName,
         email: email,
-        id: user.uid,
         points: 0,
-        digitalCredentialQR: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.uid}`
+        digitalCredentialQR: user.uid, // Store UID in QR field
       };
       
       setDocumentNonBlocking(userDocRef, userData, { merge: true });
 
       toast({
-        title: "¡Bienvenido!",
-        description: "Tu registro fue exitoso. Tu sesión ha sido iniciada.",
+        title: "¡Registro Exitoso!",
+        description: "Tu cuenta ha sido creada. Ahora puedes iniciar sesión.",
       });
 
-      // Redirect directly to the dashboard
-      router.push("/dashboard");
+      router.push("/login");
 
     } catch (error: any) {
       console.error("Error al registrar usuario: ", error);
@@ -103,7 +100,7 @@ export function RegistrationForm() {
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Crear una cuenta</CardTitle>
           <CardDescription>
-            Regístrate para participar en la Semana de la Ingeniería 2025.
+            Regístrate para participar en el congreso.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -127,9 +124,22 @@ export function RegistrationForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo Institucional</FormLabel>
+                    <FormLabel>Correo Electrónico</FormLabel>
                     <FormControl>
-                      <Input placeholder="a2233336160@alumnos.uat.edu.mx" {...field} />
+                      <Input placeholder="tu@correo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

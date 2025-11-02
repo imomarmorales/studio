@@ -3,16 +3,12 @@
 
 import {
   Calendar,
-  Flame,
   Home,
   LogOut,
-  Medal,
   Newspaper,
   Trophy,
   Users,
-  GraduationCap,
-  Info,
-  Activity,
+  Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -25,23 +21,17 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 
 const mainMenuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/agenda', label: 'Agenda', icon: Calendar },
+  { href: '/dashboard', label: 'Eventos', icon: Home },
   { href: '/ponentes', label: 'Ponentes', icon: Users },
+  { href: '/ranking', label: 'Ranking', icon: Trophy },
   { href: '/noticias', label: 'Noticias', icon: Newspaper },
 ];
 
-const activityMenuItems = [
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/concursos', label: 'Concursos', icon: Medal },
-  { href: '/coloquio', label: 'Coloquio', icon: GraduationCap },
-  { href: '/reto-fit', label: '#RetoFIT', icon: Flame },
+const adminMenuItems = [
+    { href: '/admin/users', label: 'Gestionar Usuarios', icon: Shield },
 ];
 
 export function AppSidebar() {
@@ -53,14 +43,31 @@ export function AppSidebar() {
         <Logo />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center">
-            <Info />
-            <span>Principal</span>
-          </SidebarGroupLabel>
-          <SidebarMenu>
+        <SidebarMenu>
             {mainMenuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
+            <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={item.label}
+                >
+                <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            ))}
+        </SidebarMenu>
+        <SidebarMenu>
+            <SidebarMenuItem>
+                 <div className="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Admin</span>
+                 </div>
+            </SidebarMenuItem>
+          {adminMenuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith(item.href)}
@@ -71,40 +78,14 @@ export function AppSidebar() {
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center">
-            <Activity />
-            <span>Actividades</span>
-          </SidebarGroupLabel>
-          <SidebarMenu>
-            {activityMenuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Cerrar Sesión">
+              <SidebarMenuButton tooltip="Cerrar Sesión" asChild>
                 <Link href="/">
                     <LogOut />
                     <span>Cerrar Sesión</span>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Shield, Users, Home, LogOut } from 'lucide-react';
+import { Shield, Users, Home, LogOut, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
@@ -16,8 +16,8 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { href: '/users', label: 'Gestionar Usuarios', icon: Users },
-  // Add more admin links here
+  { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
+  { href: '/admin/users', label: 'Gestionar Usuarios', icon: Users },
 ];
 
 export function AdminSidebar() {
@@ -34,11 +34,11 @@ export function AdminSidebar() {
                 <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/dashboard')}
-                    tooltip="Ir al Dashboard"
+                    tooltip="Ir a Eventos"
                 >
                     <Link href="/dashboard">
                         <Home />
-                        <span>Dashboard Usuario</span>
+                        <span>Ver Eventos</span>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
@@ -54,10 +54,10 @@ export function AdminSidebar() {
             <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(`/admin${item.href}`)}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={item.label}
                 >
-                  <Link href={`/admin${item.href}`}>
+                  <Link href={item.href}>
                     <item.icon />
                     <span>{item.label}</span>
                   </Link>
