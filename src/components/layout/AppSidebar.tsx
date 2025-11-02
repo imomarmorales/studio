@@ -21,7 +21,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -29,7 +29,7 @@ const mainMenuItems = [
   { href: '/dashboard', label: 'Eventos', icon: Home },
   { href: '/perfil', label: 'Mi Perfil', icon: PerfilIcon },
   { href: '/ponentes', label: 'Ponentes', icon: PonentesIcon },
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
+  // { href: '/ranking', label: 'Ranking', icon: Trophy },
   { href: '/noticias', label: 'Noticias', icon: Newspaper },
 ];
 

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { href: '/admin/users', label: 'Gestionar Usuarios', icon: Users },
+  // { href: '/admin/users', label: 'Gestionar Usuarios', icon: Users },
   { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
 ];
 
