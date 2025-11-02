@@ -20,7 +20,7 @@
  * - Only authenticated users can access their own profile data and associated subcollections.
  * - Administrators, as determined by their presence in the `roles_admin` collection, can manage congress events and speaker information.
  * - Public read access is granted for news, congress events, and speaker data.
- * - User listing is disallowed.
+ * - User listing is allowed for authenticated users to populate ranking and user management screens.
  *
  * Denormalization for Authorization:
  * - Administrator status is determined by the presence of a document in `/roles_admin/{uid}`, avoiding complex queries.
@@ -55,6 +55,7 @@ service cloud.firestore {
      * @path /users/{userId}
      * @allow (create) Allows creating a user document if the UID matches the document ID.
      * @allow (get) Allows a user to get their own profile if the UID matches the document ID or the user is an admin.
+     * @allow (list) Allows authenticated users to list all users for ranking and admin purposes.
      * @allow (update) Allows a user to update their own profile if the UID matches the document ID or the user is an admin.
      * @allow (delete) Allows a user to delete their own profile if the UID matches the document ID or the user is an admin.
      * @deny (create) Denies creating a user document if the UID does not match the document ID.
@@ -66,7 +67,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if false;
+      allow list: if isSignedIn();
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
