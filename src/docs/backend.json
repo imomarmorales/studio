@@ -63,8 +63,13 @@
           "format": "date-time"
         },
         "location": {
-            "type": "string",
-            "description": "The location or modality of the event (e.g., Auditorium, Online)."
+          "type": "string",
+          "description": "The location or modality of the event (e.g., Auditorium, Online)."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the event's representative image.",
+          "format": "uri"
         }
       },
       "required": [
