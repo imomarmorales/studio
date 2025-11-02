@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Shield, Users, Home, LogOut, Calendar } from 'lucide-react';
@@ -16,8 +15,8 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
   { href: '/admin/users', label: 'Gestionar Usuarios', icon: Users },
+  { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
 ];
 
 export function AdminSidebar() {
@@ -34,11 +33,11 @@ export function AdminSidebar() {
                 <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/dashboard')}
-                    tooltip="Ir a Eventos"
+                    tooltip="Ir a Eventos de Usuario"
                 >
                     <Link href="/dashboard">
                         <Home />
-                        <span>Ver Eventos</span>
+                        <span>Dashboard</span>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
