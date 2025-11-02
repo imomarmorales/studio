@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, ShieldCheck, Star, User } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -27,21 +27,24 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ManageUsersPage() {
   const firestore = useFirestore();
+  const { user, isUserLoading: isAuthLoading } = useUser();
   
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    // Wait until auth state is resolved and we have a firestore instance
+    if (isAuthLoading || !firestore) return null;
     return collection(firestore, 'users');
-  }, [firestore]);
+  }, [firestore, isAuthLoading]);
 
   const rolesAdminQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (isAuthLoading || !firestore) return null;
     return collection(firestore, 'roles_admin');
-  }, [firestore]);
+  }, [firestore, isAuthLoading]);
 
   const { data: users, isLoading: isLoadingUsers } = useCollection(usersQuery);
   const { data: adminRoles, isLoading: isLoadingAdmins } = useCollection(rolesAdminQuery);
 
-  const isLoading = isLoadingUsers || isLoadingAdmins;
+  // Overall loading state should consider auth state as well
+  const isLoading = isAuthLoading || isLoadingUsers || isLoadingAdmins;
 
   const getRole = (userId: string) => {
     return adminRoles?.some(admin => admin.id === userId) ? 'admin' : 'participant';
