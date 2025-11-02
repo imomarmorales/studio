@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,16 +8,15 @@ import * as z from "zod";
 import { signInAnonymously } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import Link from "next/link";
-import { MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Form,
@@ -45,7 +43,6 @@ export function RegistrationForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,17 +74,13 @@ export function RegistrationForm() {
       
       setDocumentNonBlocking(userDocRef, userData, { merge: true });
 
-      // NOTE: In a real application, this is where you would trigger a backend
-      // function (e.g., a Cloud Function) to send an email to the user with
-      // their QR code.
-      // For now, we will just show a success message.
-
-      setIsSuccess(true);
-      
       toast({
-        title: "¡Registro Exitoso!",
-        description: "Revisa tu correo para obtener tu credencial.",
+        title: "¡Bienvenido!",
+        description: "Tu registro fue exitoso. Tu sesión ha sido iniciada.",
       });
+
+      // Redirect directly to the dashboard
+      router.push("/dashboard");
 
     } catch (error: any) {
       console.error("Error al registrar usuario: ", error);
@@ -103,34 +96,6 @@ export function RegistrationForm() {
     }
   }
 
-  if (isSuccess) {
-    return (
-      <div className="container flex items-center justify-center py-12">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="mx-auto bg-green-100 p-4 rounded-full w-fit">
-              <MailCheck className="h-8 w-8 text-green-600" />
-            </div>
-            <CardTitle className="font-headline text-2xl pt-4">¡Registro Exitoso!</CardTitle>
-            <CardDescription>
-              Hemos simulado el envío de tu credencial digital QR a tu correo.
-              En una app real, aquí recibirías tu código.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Puedes cerrar esta ventana.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" asChild>
-                <Link href="/login">Ir a Iniciar Sesión</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="container flex items-center justify-center py-12">
@@ -175,13 +140,15 @@ export function RegistrationForm() {
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm">
-            ¿Ya tienes una cuenta?{" "}
-            <Link href="/login" className="underline text-primary">
-              Inicia sesión con tu QR
-            </Link>
-          </div>
         </CardContent>
+        <CardFooter className="flex flex-col items-center gap-4">
+           <p className="text-center text-sm text-muted-foreground">
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login" className="underline text-primary">
+              Inicia sesión aquí
+            </Link>
+          </p>
+        </CardFooter>
       </Card>
     </div>
   );

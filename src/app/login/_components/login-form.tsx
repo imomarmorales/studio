@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signInAnonymously } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
 import { QrCode } from "lucide-react";
+import { signInWithCustomToken } from "firebase/auth";
 
 // The "QR Code" is just the user's UID. This schema validates that it's not empty.
 const formSchema = z.object({
@@ -53,7 +53,7 @@ export function LoginForm() {
 
     toast({
       title: "Procesando credencial...",
-      description: "Iniciando sesión.",
+      description: "Validando tu identidad.",
     });
 
     try {
@@ -62,28 +62,38 @@ export function LoginForm() {
         // and sign the user in. A robust implementation would involve a server
         // validating the UID against a database before creating a custom token.
         
-        // Since we are creating anonymous users, we need to sign out any *current*
-        // anonymous user before we can "sign in" as the new user.
-        // A full custom token flow would handle this more gracefully.
-        if (auth.currentUser) {
-            await auth.signOut();
+        // Since we are using anonymous auth, we can't just "log in" as another
+        // user. We would need a custom token. For this demo, we'll simulate
+        // the effect by redirecting to the dashboard, assuming a real app
+        // would handle custom token exchange here.
+        
+        if (auth.currentUser?.uid === uid) {
+          toast({
+            title: "Sesión ya iniciada",
+            description: "Ya has iniciado sesión con esta credencial."
+          });
+          router.push("/dashboard");
+          return;
         }
 
-        // We can't *actually* sign in as another user with just their UID on the client.
-        // This simulates the intended behavior. The user is already "logged in"
-        // anonymously from the registration step. Logging out and trying to log
-        // back in with this flow won't work without a secure custom token backend.
+        // In a real app, you would:
+        // 1. Send the `uid` to your backend.
+        // 2. Your backend verifies it's a valid user.
+        // 3. Your backend uses the Firebase Admin SDK to create a custom token: `admin.auth().createCustomToken(uid)`
+        // 4. Your backend sends the custom token back to the client.
+        // 5. The client signs in with the token: `signInWithCustomToken(auth, customToken)`
         
-        // For demonstration, we'll just redirect.
+        // For this prototype, we'll show a message and redirect.
         toast({
             title: "Inicio de Sesión Simulado",
-            description: "Redirigiendo al dashboard. El inicio de sesión real requiere un backend."
+            description: "Redirigiendo al dashboard. La autenticación real en un nuevo dispositivo requiere un backend."
         });
 
       // We are just navigating, not truly authenticating as the scanned user.
       router.push("/dashboard");
 
-    } catch (error: any) {
+    } catch (error: any)
+{
       console.error("Error al iniciar sesión con QR:", error);
       toast({
         variant: "destructive",
@@ -100,9 +110,9 @@ export function LoginForm() {
           <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
             <QrCode className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="font-headline text-2xl pt-4">Iniciar Sesión con QR</CardTitle>
+          <CardTitle className="font-headline text-2xl pt-4">Iniciar Sesión</CardTitle>
           <CardDescription>
-            Pega el contenido de tu credencial digital para acceder.
+            Pega el código de tu credencial digital para acceder en un nuevo dispositivo.
           </CardDescription>
         </CardHeader>
         <CardContent>
