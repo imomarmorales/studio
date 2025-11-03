@@ -33,7 +33,9 @@ import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
   fullName: z.string().min(3, { message: "El nombre completo es requerido." }),
-  email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
+  email: z.string().email({ message: "Por favor, ingresa un correo válido." }).refine(email => email.endsWith('@alumnos.uat.edu.mx'), {
+    message: "Solo se permiten correos institucionales de alumnos (@alumnos.uat.edu.mx)."
+  }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
 });
 
@@ -74,16 +76,16 @@ export function RegistrationForm() {
 
       toast({
         title: "¡Registro Exitoso!",
-        description: "Tu cuenta ha sido creada. Ahora puedes iniciar sesión.",
+        description: "Tu cuenta ha sido creada y tu sesión iniciada.",
       });
 
-      router.push("/login");
+      router.push("/dashboard");
 
     } catch (error: any) {
       console.error("Error al registrar usuario: ", error);
       let description = "No se pudo completar el registro. Inténtalo de nuevo.";
       if (error.code === 'auth/email-already-in-use') {
-        description = "Este correo electrónico ya está en uso. Intenta iniciar sesión."
+        description = "Este correo electrónico ya está en uso. Por favor, intenta iniciar sesión."
       }
       toast({
         variant: "destructive",
@@ -124,9 +126,9 @@ export function RegistrationForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormLabel>Correo Institucional</FormLabel>
                     <FormControl>
-                      <Input placeholder="tu@correo.com" {...field} />
+                      <Input placeholder="a2233...@alumnos.uat.edu.mx" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
