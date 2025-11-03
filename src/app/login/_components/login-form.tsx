@@ -30,7 +30,13 @@ import { Shield } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
-  email: z.string().min(1, { message: "El correo o usuario es requerido." }),
+  email: z.string().refine(value => {
+    const isAdmin = value.toLowerCase() === 'admin';
+    const isUatEmail = value.toLowerCase().endsWith('@alumnos.uat.edu.mx') && z.string().email().safeParse(value).success;
+    return isAdmin || isUatEmail;
+  }, {
+    message: "Debe ser 'admin' o un correo institucional válido (@alumnos.uat.edu.mx)."
+  }),
   password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
@@ -51,7 +57,7 @@ export function LoginForm() {
     if (!auth) return;
 
     // Admin login simulation
-    if (values.email === 'admin' && values.password === '12345') {
+    if (values.email.toLowerCase() === 'admin' && values.password === '12345') {
        toast({
         title: "¡Bienvenido, Admin!",
         description: "Has iniciado sesión como administrador.",
@@ -100,7 +106,7 @@ export function LoginForm() {
                   <FormItem>
                     <FormLabel>Correo o Usuario</FormLabel>
                     <FormControl>
-                      <Input placeholder="tu@correo.com o admin" {...field} />
+                      <Input placeholder="a22..._@alumnos.uat.edu.mx o admin" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
