@@ -29,12 +29,12 @@ const mainMenuItems = [
   { href: '/dashboard', label: 'Eventos', icon: Home },
   { href: '/perfil', label: 'Mi Perfil', icon: PerfilIcon },
   { href: '/ponentes', label: 'Ponentes', icon: PonentesIcon },
-  // { href: '/ranking', label: 'Ranking', icon: Trophy },
+  { href: '/ranking', label: 'Ranking', icon: Trophy },
   { href: '/noticias', label: 'Noticias', icon: Newspaper },
 ];
 
 const adminMenuItems = [
-    { href: '/admin/users', label: 'Gestionar Usuarios', icon: Shield },
+    // { href: '/admin/users', label: 'Gestionar Usuarios', icon: Shield },
 ];
 
 export function AppSidebar() {
@@ -75,6 +75,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+            {adminMenuItems.length > 0 && (
             <SidebarMenu>
               <SidebarMenuItem>
                  <div className="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70">
@@ -97,6 +98,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+            )}
           </>
         )}
       </SidebarContent>
