@@ -30,7 +30,7 @@ import { Shield } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
+  email: z.string().min(1, { message: "El correo o usuario es requerido." }),
   password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
@@ -56,7 +56,7 @@ export function LoginForm() {
         title: "¡Bienvenido, Admin!",
         description: "Has iniciado sesión como administrador.",
       });
-      router.push("/admin/users");
+      router.push("/admin/events");
       return;
     }
     
