@@ -77,21 +77,26 @@ export default function RankingPage() {
       </div>
 
       {/* Top 3 Players - Mobile */}
-      <div className="grid grid-cols-1 md:hidden gap-4 justify-items-center items-center">
+      <div className="flex md:hidden gap-2 justify-center items-end">
         {podiumOrderMobile.map((player, index) => {
            const rank = (index + 1) as 1 | 2 | 3;
+           const scale = rank === 1 ? 'scale-110 z-10' : 'scale-90';
+           const avatarSize = rank === 1 ? 'w-20 h-20' : 'w-16 h-16';
+           const textSize = rank === 1 ? 'text-base' : 'text-sm';
+
           return (
-          <Card key={player.id} className={`relative w-full max-w-sm text-center p-6 ${rank === 1 ? 'bg-primary/5' : ''}`}>
-            <Medal rank={rank} />
-            <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary">
+          <Card key={player.id} className={`relative w-1/3 text-center p-2 transform transition-transform ${scale} ${rank === 1 ? 'bg-primary/5' : ''}`}>
+            {rank < 4 && <Medal rank={rank} />}
+            <Avatar className={`${avatarSize} mx-auto mb-2 border-2 border-primary`}>
               <AvatarImage src={player.avatarUrl} alt={player.name} />
               <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
             </Avatar>
-            <h3 className="text-xl font-bold">{player.name}</h3>
-            <p className="text-primary font-semibold">{player.points.toLocaleString()} pts</p>
+            <h3 className={`font-bold ${textSize} truncate`}>{player.name}</h3>
+            <p className="text-primary font-semibold text-xs">{player.points.toLocaleString()} pts</p>
           </Card>
         )})}
       </div>
+
 
       {/* Rest of the players */}
       <Card>
