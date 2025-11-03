@@ -51,7 +51,10 @@ export function EventDetailsDialog({ event, isOpen, onOpenChange, onMarkAttendan
           <p className="text-sm text-muted-foreground">{event.description}</p>
         </div>
         <DialogFooter className="sm:justify-start gap-2">
-           <Button type="button" onClick={onMarkAttendanceClick}>
+           <Button type="button" onClick={() => {
+               onMarkAttendanceClick();
+               onOpenChange(false); // Close details dialog and open scanner
+           }}>
                 <Ticket className="mr-2 h-4 w-4" />
                 Marcar Asistencia
             </Button>
