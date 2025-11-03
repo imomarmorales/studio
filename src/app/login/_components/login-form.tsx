@@ -57,13 +57,15 @@ export function LoginForm() {
     if (!auth) return;
 
     // Admin login simulation
-    if (values.email.toLowerCase() === 'admin' && values.password === '12345') {
-       toast({
-        title: "¡Bienvenido, Admin!",
-        description: "Has iniciado sesión como administrador.",
-      });
-      router.push("/admin/events");
-      return;
+    if (values.email.toLowerCase() === 'admin') {
+      if (values.password === '12345') {
+        toast({
+          title: "¡Bienvenido, Admin!",
+          description: "Has iniciado sesión como administrador.",
+        });
+        router.push("/admin/events");
+        return; // Important: Stop execution here
+      }
     }
     
     try {
@@ -76,10 +78,17 @@ export function LoginForm() {
 
     } catch (error: any) {
       console.error("Error al iniciar sesión:", error);
+      let errorMessage = "Las credenciales son incorrectas o el usuario no existe. Por favor, regístrate primero.";
+      if (error.code === 'auth/invalid-credential') {
+        errorMessage = "Credenciales inválidas. Por favor, verifica tu correo y contraseña."
+      } else if (error.code === 'auth/user-not-found') {
+          errorMessage = "El usuario no fue encontrado. Por favor, regístrate primero.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
-        description: "Las credenciales son incorrectas o el usuario no existe. Por favor, regístrate primero.",
+        description: errorMessage,
       });
     }
   }
