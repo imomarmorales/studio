@@ -74,7 +74,7 @@ export function LoginForm() {
         title: "Inicio de sesión exitoso",
         description: "¡Bienvenido de vuelta!",
       });
-      router.push("/dashboard");
+      router.push("/app/dashboard");
 
     } catch (error: any) {
       console.error("Error al iniciar sesión:", error);

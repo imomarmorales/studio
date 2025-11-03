@@ -26,11 +26,11 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 const mainMenuItems = [
-  { href: '/dashboard', label: 'Eventos', icon: Home },
-  { href: '/perfil', label: 'Mi Perfil', icon: PerfilIcon },
-  { href: '/ponentes', label: 'Ponentes', icon: PonentesIcon },
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/noticias', label: 'Noticias', icon: Newspaper },
+  { href: '/app/dashboard', label: 'Eventos', icon: Home },
+  { href: '/app/perfil', label: 'Mi Perfil', icon: PerfilIcon },
+  { href: '/app/ponentes', label: 'Ponentes', icon: PonentesIcon },
+  { href: '/app/ranking', label: 'Ranking', icon: Trophy },
+  { href: '/app/noticias', label: 'Noticias', icon: Newspaper },
 ];
 
 const adminMenuItems = [

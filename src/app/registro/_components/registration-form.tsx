@@ -79,7 +79,7 @@ export function RegistrationForm() {
         description: "Tu cuenta ha sido creada y tu sesión iniciada.",
       });
 
-      router.push("/dashboard");
+      router.push("/app/dashboard");
 
     } catch (error: any) {
       console.error("Error al registrar usuario: ", error);

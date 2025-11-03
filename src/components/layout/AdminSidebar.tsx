@@ -32,10 +32,10 @@ export function AdminSidebar() {
             <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith('/dashboard')}
+                    isActive={pathname.startsWith('/app/dashboard')}
                     tooltip="Ir a Eventos de Usuario"
                 >
-                    <Link href="/dashboard">
+                    <Link href="/app/dashboard">
                         <Home />
                         <span>Dashboard</span>
                     </Link>
