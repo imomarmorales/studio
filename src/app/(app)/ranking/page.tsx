@@ -4,7 +4,6 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import Image from 'next/image';
 
 // Mock data for participants
 const mockParticipants = [
@@ -36,13 +34,14 @@ const mockParticipants = [
 const topPlayers = mockParticipants.slice(0, 3);
 const otherPlayers = mockParticipants.slice(3);
 
-const podiumOrder = [topPlayers[1], topPlayers[0], topPlayers[2]];
+const podiumOrderMobile = [...topPlayers]; // 1st, 2nd, 3rd
+const podiumOrderDesktop = [topPlayers[1], topPlayers[0], topPlayers[2]]; // 2nd, 1st, 3rd
 
 const Medal = ({ rank }: { rank: 1 | 2 | 3 }) => {
   const medalColors = {
     1: 'bg-yellow-400 text-white',
     2: 'bg-gray-400 text-white',
-    3: 'bg-yellow-600 text-white',
+    3: 'bg-orange-400 text-white',
   };
   return (
     <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg ${medalColors[rank]}`}>
@@ -60,12 +59,29 @@ export default function RankingPage() {
         description="¡Acumula puntos y gana premios!"
       />
       
-      {/* Top 3 Players */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 justify-items-center items-end">
-        {podiumOrder.map((player, index) => {
+      {/* Top 3 Players - Desktop */}
+      <div className="hidden md:grid md:grid-cols-3 gap-4 justify-items-center items-end">
+        {podiumOrderDesktop.map((player, index) => {
            const rank = [2, 1, 3][index] as 1 | 2 | 3;
           return (
           <Card key={player.id} className={`relative w-full max-w-sm text-center p-6 transform transition-transform ${rank === 1 ? 'scale-110' : 'scale-100'}`}>
+            <Medal rank={rank} />
+            <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary">
+              <AvatarImage src={player.avatarUrl} alt={player.name} />
+              <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <h3 className="text-xl font-bold">{player.name}</h3>
+            <p className="text-primary font-semibold">{player.points.toLocaleString()} pts</p>
+          </Card>
+        )})}
+      </div>
+
+      {/* Top 3 Players - Mobile */}
+      <div className="grid grid-cols-1 md:hidden gap-4 justify-items-center items-center">
+        {podiumOrderMobile.map((player, index) => {
+           const rank = (index + 1) as 1 | 2 | 3;
+          return (
+          <Card key={player.id} className={`relative w-full max-w-sm text-center p-6 ${rank === 1 ? 'bg-primary/5' : ''}`}>
             <Medal rank={rank} />
             <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary">
               <AvatarImage src={player.avatarUrl} alt={player.name} />
