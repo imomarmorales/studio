@@ -3,39 +3,67 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, CollectionReference, Query, query, where, getDocs } from "firebase/firestore";
 import { Calendar, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import type { CongressEvent } from "@/lib/types";
+import { QrScannerDialog } from "@/components/events/QrScannerDialog";
+import { EventDetailsDialog }from "@/components/events/EventDetailsDialog";
+import { markAttendance } from "@/lib/events";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data for events, to be replaced with Firestore data
-const mockEvents = [
-  { id: '1', title: 'Ponencia: IA en la Industria 4.0', description: 'Explorando el futuro de la inteligencia artificial.', dateTime: '2025-11-18T10:00:00', location: 'Auditorio Principal', imageUrl: 'https://picsum.photos/seed/event1/600/400' },
-  { id: '2', title: 'Taller de Robótica Móvil', description: 'Construye y programa tu propio robot seguidor de línea.', dateTime: '2025-11-19T15:00:00', location: 'Laboratorio de Electrónica', imageUrl: 'https://picsum.photos/seed/event2/600/400' },
-  { id: '3', title: 'Concurso de Programación', description: 'Resuelve problemas complejos y compite por el primer lugar.', dateTime: '2025-11-20T09:00:00', location: 'Centro de Cómputo', imageUrl: 'https://picsum.photos/seed/event3/600/400' },
-];
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const router = useRouter();
+  const { toast } = useToast();
 
-  const userDocRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
+  const [selectedEventForDetails, setSelectedEventForDetails] = useState<CongressEvent | null>(null);
+  const [isScannerOpen, setScannerOpen] = useState(false);
+  const [lastScannedEventId, setLastScannedEventId] = useState<string | null>(null);
 
-  // For this example, we'll use mock events. In a real scenario, you'd fetch from Firestore.
-  const { data: events, isLoading: areEventsLoading } = { data: mockEvents, isLoading: false };
-  
+  const eventsQuery = useMemoFirebase(() => {
+      if (!firestore) return null;
+      return collection(firestore, 'congressEvents') as Query<CongressEvent>;
+  }, [firestore]);
+
+  const { data: events, isLoading: areEventsLoading } = useCollection<CongressEvent>(eventsQuery);
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [isUserLoading, user, router]);
+
+
+  const handleScanSuccess = async (eventId: string) => {
+    if (!user || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para marcar asistencia.' });
+      return;
+    }
+    
+    // Prevent re-scanning the same code immediately
+    if(eventId === lastScannedEventId) return;
+
+    setLastScannedEventId(eventId);
+    setScannerOpen(false);
+
+    try {
+      await markAttendance(firestore, user.uid, eventId);
+      toast({ title: '¡Asistencia Registrada!', description: 'Has ganado puntos por participar en el evento.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error al Registrar Asistencia', description: error.message });
+    }
+    
+    // Allow re-scanning after a delay
+    setTimeout(() => setLastScannedEventId(null), 2000);
+  };
+
 
   const isLoading = isUserLoading || areEventsLoading;
 
@@ -72,7 +100,7 @@ export default function DashboardPage() {
             <Card key={event.id} className="flex flex-col overflow-hidden">
               <div className="relative w-full h-48">
                 <Image 
-                  src={event.imageUrl} 
+                  src={event.imageUrl || `https://picsum.photos/seed/${event.id}/600/400`} 
                   alt={`Imagen de ${event.title}`} 
                   fill
                   className="object-cover"
@@ -93,14 +121,33 @@ export default function DashboardPage() {
                     <span>{event.location}</span>
                   </div>
                 </CardContent>
-                <CardFooter className="p-0 pt-6">
-                  <Button className="w-full">Ver Detalles</Button>
+                <CardFooter className="p-0 pt-6 flex items-center gap-2">
+                  <Button className="w-full" variant="outline" onClick={() => setSelectedEventForDetails(event)}>Ver Detalles</Button>
+                  <Button className="w-full" onClick={() => setScannerOpen(true)}>Marcar Asistencia</Button>
                 </CardFooter>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Dialog for Event Details */}
+      <EventDetailsDialog 
+        event={selectedEventForDetails} 
+        isOpen={!!selectedEventForDetails}
+        onOpenChange={(isOpen) => !isOpen && setSelectedEventForDetails(null)}
+        onMarkAttendanceClick={() => {
+            setSelectedEventForDetails(null);
+            setScannerOpen(true);
+        }}
+      />
+
+      {/* Dialog for QR Scanner */}
+      <QrScannerDialog 
+        isOpen={isScannerOpen}
+        onOpenChange={setScannerOpen}
+        onScanSuccess={handleScanSuccess}
+      />
     </div>
   );
 }
