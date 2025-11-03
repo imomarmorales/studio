@@ -15,7 +15,8 @@ interface DigitalCredentialProps {
 
 export function DigitalCredential({ user }: DigitalCredentialProps) {
   
-  const qrCodeUrl = user.digitalCredentialQR || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${user.email}`;
+  const qrData = user.digitalCredentialQR || user.email;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
 
   return (
     <Card className="overflow-hidden">
