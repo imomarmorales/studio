@@ -1,7 +1,7 @@
 'use server';
 
 import { initializeServerApp } from '@/firebase/server-init';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch } from 'firebase-admin/firestore';
 
 const exampleEvents = [
   {
@@ -48,12 +48,12 @@ const exampleEvents = [
 
 export async function seedEvents(): Promise<void> {
   const { firestore } = await initializeServerApp();
-  const eventsCollectionRef = collection(firestore, 'congressEvents');
+  const eventsCollectionRef = firestore.collection('congressEvents');
   
-  const batch = writeBatch(firestore);
+  const batch = firestore.batch();
 
   exampleEvents.forEach((event) => {
-    const eventRef = doc(eventsCollectionRef, event.id);
+    const eventRef = eventsCollectionRef.doc(event.id);
     batch.set(eventRef, event);
   });
 
