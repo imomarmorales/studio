@@ -1,8 +1,7 @@
 'use server';
 
-import { getApps, getApp, initializeApp, cert } from 'firebase-admin/app';
+import { getApps, getApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { firebaseConfig } from './config';
 
 /**
  * Initializes the Firebase Admin SDK on the server-side if it hasn't been already.
@@ -12,9 +11,8 @@ import { firebaseConfig } from './config';
 export async function initializeServerApp() {
   if (getApps().length === 0) {
     // Initialize with default credentials for the project environment.
-    initializeApp({
-      projectId: firebaseConfig.projectId,
-    });
+    // In App Hosting, this automatically uses the application's default credentials.
+    initializeApp();
   }
 
   return {
