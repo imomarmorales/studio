@@ -64,7 +64,7 @@ export function LoginForm() {
           description: "Has iniciado sesión como administrador.",
         });
         router.push("/admin/events");
-        return; // Important: Stop execution here
+        return;
       }
     }
     
@@ -78,11 +78,19 @@ export function LoginForm() {
 
     } catch (error: any) {
       console.error("Error al iniciar sesión:", error);
-      let errorMessage = "Las credenciales son incorrectas o el usuario no existe. Por favor, regístrate primero.";
-      if (error.code === 'auth/invalid-credential') {
-        errorMessage = "Credenciales inválidas. Por favor, verifica tu correo y contraseña."
-      } else if (error.code === 'auth/user-not-found') {
-          errorMessage = "El usuario no fue encontrado. Por favor, regístrate primero.";
+      let errorMessage = "Ocurrió un error inesperado. Por favor, intenta de nuevo.";
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+            errorMessage = "El usuario no fue encontrado. Por favor, regístrate primero.";
+            break;
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            errorMessage = "Credenciales inválidas. Por favor, verifica tu correo y contraseña.";
+            break;
+        case 'auth/invalid-email':
+            errorMessage = "El formato del correo electrónico no es válido.";
+            break;
       }
       
       toast({
