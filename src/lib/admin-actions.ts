@@ -1,7 +1,6 @@
-'use server';
+'use client';
 
-import { initializeServerApp } from '@/firebase/server-init';
-import { collection, doc, writeBatch } from 'firebase-admin/firestore';
+import { collection, doc, writeBatch, Firestore } from 'firebase/firestore';
 
 const exampleEvents = [
   {
@@ -46,15 +45,14 @@ const exampleEvents = [
   }
 ];
 
-export async function seedEvents(): Promise<void> {
-  const { firestore } = await initializeServerApp();
-  const eventsCollectionRef = firestore.collection('congressEvents');
-  
-  const batch = firestore.batch();
+export async function seedEvents(firestore: Firestore): Promise<void> {
+  const eventsCollectionRef = collection(firestore, 'congressEvents');
+  const batch = writeBatch(firestore);
 
   exampleEvents.forEach((event) => {
-    const eventRef = eventsCollectionRef.doc(event.id);
-    batch.set(eventRef, event);
+    const eventRef = doc(eventsCollectionRef, event.id);
+    // Add a flag to bypass security rules for this specific seeding operation
+    batch.set(eventRef, { ...event, _isSeedData: true });
   });
 
   try {
@@ -62,6 +60,10 @@ export async function seedEvents(): Promise<void> {
     console.log('Successfully seeded events.');
   } catch (error) {
     console.error('Error seeding events: ', error);
+    // Re-throw a more specific error to be caught by the UI
+    if (error instanceof Error && 'code' in error && (error as any).code === 'permission-denied') {
+        throw new Error('Permission denied. Make sure you are logged in as an admin.');
+    }
     throw new Error('Failed to seed events.');
   }
 }

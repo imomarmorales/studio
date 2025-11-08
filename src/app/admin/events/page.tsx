@@ -11,14 +11,25 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { seedEvents } from '@/lib/admin-actions';
+import { useFirebase } from '@/firebase';
 
 
 export default function ManageEventsPage() {
     const { toast } = useToast();
+    const { firestore } = useFirebase();
 
     const handleSeedEvents = async () => {
+        if (!firestore) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "La base de datos no está disponible. Inténtalo de nuevo.",
+            });
+            return;
+        }
+
         try {
-            await seedEvents();
+            await seedEvents(firestore);
             toast({
                 title: "Éxito",
                 description: "Los eventos de ejemplo han sido cargados correctamente.",
@@ -28,7 +39,7 @@ export default function ManageEventsPage() {
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "No se pudieron cargar los eventos de ejemplo. Revisa la consola para más detalles.",
+                description: error.message || "No se pudieron cargar los eventos de ejemplo.",
             });
         }
     };

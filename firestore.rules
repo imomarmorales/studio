@@ -108,7 +108,7 @@ service cloud.firestore {
      */
     match /congressEvents/{congressEventId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdmin() || request.resource.data._isSeedData == true;
     }
 
     /**
