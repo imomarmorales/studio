@@ -51,9 +51,9 @@ export function Countdown() {
   ];
 
   return (
-    <div className="flex justify-center space-x-2 md:space-x-4" aria-label="Cuenta regresiva para el evento">
+    <div className="flex justify-center space-x-2 sm:space-x-4" aria-label="Cuenta regresiva para el evento">
       {countdownItems.map((item, i) => (
-        <div key={i} className="text-center bg-white/10 backdrop-blur-sm p-4 rounded-lg w-24">
+        <div key={i} className="text-center bg-white/10 backdrop-blur-sm p-3 rounded-lg flex-1 max-w-[6rem]">
           <span className="text-3xl md:text-5xl font-bold font-headline">
             {String(item.value).padStart(2, '0')}
           </span>
