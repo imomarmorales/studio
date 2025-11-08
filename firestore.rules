@@ -53,11 +53,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows admins to list users.
+     * @description Allows authenticated users to list all users for ranking purposes.
      * @path /users
      */
-    match /users {
-        allow list: if isAdmin();
+    match /users/{document=**} {
+        allow list: if isSignedIn();
     }
 
 
@@ -130,7 +130,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
   }
 }
