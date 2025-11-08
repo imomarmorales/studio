@@ -1,6 +1,8 @@
 'use client';
 
 import { collection, doc, writeBatch, Firestore } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const exampleEvents = [
   {
@@ -49,21 +51,34 @@ export async function seedEvents(firestore: Firestore): Promise<void> {
   const eventsCollectionRef = collection(firestore, 'congressEvents');
   const batch = writeBatch(firestore);
 
-  exampleEvents.forEach((event) => {
+  const seedData = exampleEvents.map(event => ({
+    ...event,
+    _isSeedData: true
+  }));
+
+  seedData.forEach((event) => {
     const eventRef = doc(eventsCollectionRef, event.id);
-    // Add a flag to bypass security rules for this specific seeding operation
-    batch.set(eventRef, { ...event, _isSeedData: true });
+    batch.set(eventRef, event);
   });
 
   try {
     await batch.commit();
     console.log('Successfully seeded events.');
   } catch (error) {
-    console.error('Error seeding events: ', error);
-    // Re-throw a more specific error to be caught by the UI
-    if (error instanceof Error && 'code' in error && (error as any).code === 'permission-denied') {
-        throw new Error('Permission denied. Make sure you are logged in as an admin.');
-    }
-    throw new Error('Failed to seed events.');
+     // Instead of a generic error, create a contextual permission error.
+     // For a batch write, we can point to the collection path as the source.
+     // The `requestResourceData` can be an array of the documents we tried to write.
+    const permissionError = new FirestorePermissionError({
+        path: 'congressEvents', // Path for the collection
+        operation: 'write', // Batch write is a 'write' operation
+        requestResourceData: seedData // Provide the data we tried to send
+    });
+
+    // Emit the error globally so the FirebaseErrorListener can catch it.
+    errorEmitter.emit('permission-error', permissionError);
+
+    // Also re-throw the original error to ensure the promise rejects,
+    // allowing the calling UI to handle loading states, etc.
+    throw error;
   }
 }
