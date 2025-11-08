@@ -40,16 +40,24 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
+    
+    /**
+     * @description Allow any signed-in user to list all users for the ranking page.
+     * @path /users
+     */
+    match /users {
+        allow list: if isSignedIn();
+    }
+
 
     /**
      * @description Manages user profile data. Users can only create their own profile.
-     * Any authenticated user can list and get profiles for ranking.
+     * Any authenticated user can get profiles for ranking.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow get: if isSignedIn();
-      allow list: if isSignedIn();
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
