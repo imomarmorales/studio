@@ -48,18 +48,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn();
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
-
-    /**
-     * @description Allows authenticated users to list all users for ranking purposes.
-     * @path /users
-     */
-    match /users/{document=**} {
-        allow list: if isSignedIn();
-    }
-
 
     /**
      * @description Manages attendance records for a specific user.
