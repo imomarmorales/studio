@@ -43,11 +43,12 @@ service cloud.firestore {
 
     /**
      * @description Manages user profile data. Users can only create their own profile.
+     * Any authenticated user can list and get profiles for ranking.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow get: if isSignedIn();
       allow list: if isSignedIn();
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
