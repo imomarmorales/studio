@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import Image from "next/image";
-import { FirebaseClientProvider } from "@/firebase";
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,9 +19,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       </header>
       <Header />
       <main className="flex-grow">
-        <FirebaseClientProvider>
           {children}
-        </FirebaseClientProvider>
       </main>
       <Footer />
     </div>

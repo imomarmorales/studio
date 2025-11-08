@@ -3,14 +3,8 @@
 import {
   Home,
   LogOut,
-  Newspaper,
-  Trophy,
-  Users as PonentesIcon,
-  Shield,
-  User as PerfilIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import {
   Sidebar,
@@ -21,86 +15,15 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { useAuth } from '@/firebase';
-import { useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
 
-const mainMenuItems = [
-  { href: '/app/dashboard', label: 'Eventos', icon: Home },
-  { href: '/app/perfil', label: 'Mi Perfil', icon: PerfilIcon },
-  { href: '/app/ponentes', label: 'Ponentes', icon: PonentesIcon },
-  { href: '/app/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/app/noticias', label: 'Noticias', icon: Newspaper },
-];
-
-const adminMenuItems = [
-    // { href: '/admin/users', label: 'Gestionar Usuarios', icon: Shield },
-];
 
 export function AppSidebar() {
-  const pathname = usePathname();
-  const auth = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-      });
-      return () => unsubscribe();
-    }
-  }, [auth]);
-
   return (
     <Sidebar collapsible="icon" aria-label="Navegación Principal">
       <SidebarHeader>
         <Logo />
       </SidebarHeader>
       <SidebarContent>
-        {user && (
-          <>
-            <SidebarMenu>
-              {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-            {adminMenuItems.length > 0 && (
-            <SidebarMenu>
-              <SidebarMenuItem>
-                 <div className="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70">
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>Admin</span>
-                 </div>
-              </SidebarMenuItem>
-              {adminMenuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-            )}
-          </>
-        )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

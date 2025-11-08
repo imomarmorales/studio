@@ -1,137 +1,16 @@
-/**
- * @file Firebase Security Rules for Semana de la Ingenieria 2025
- *
- * @description This ruleset enforces a strict user-ownership model for user profiles and associated data,
- * with administrator privileges granted based on the existence of a document in the `roles_admin` collection.
- * Public read access is granted to news, congress events, and speaker information.
- *
- * Data Structure:
- * - /roles_admin/{uid}: Documents indicate administrator privileges.
- * - /users/{userId}: User profile data, owned by the user with ID {userId}.
- * - /users/{userId}/attendance/{attendanceId}: Attendance records for user {userId}.
- * - /users/{userId}/surveyResponses/{surveyResponseId}: Survey responses by user {userId}.
- * - /users/{userId}/liveQuestions/{liveQuestionId}: Live questions submitted by user {userId}.
- * - /users/{userId}/retoFITRegistrations/{retoFITRegistrationId}: RetoFIT registrations for user {userId}.
- * - /news/{newsId}: Publicly readable news items.
- * - /congressEvents/{congressEventId}: Publicly readable congress event information.
- * - /speakers/{speakerId}: Publicly readable speaker information.
- *
- * Key Security Decisions:
- * - Only authenticated users can access their own profile data and associated subcollections.
- * - Administrators, as determined by their presence in the `roles_admin` collection, can manage congress events and speaker information.
- * - Public read access is granted for news, congress events, and speaker data.
- * - User listing is disabled by default for security.
- *
- * Denormalization for Authorization:
- * - Administrator status is determined by the presence of a document in `/roles_admin/{uid}`, avoiding complex queries.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Grants administrator privileges based on the existence of a document in this collection.
-     * @path /roles_admin/{uid}
-     */
-    match /roles_admin/{uid} {
-      allow create: if isSignedIn() && request.auth.uid == uid;
-      allow get: if isSignedIn() && (request.auth.uid == uid || isAdmin());
-      allow list: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-    
-    /**
-     * @description Allow any signed-in user to list all users for the ranking page.
-     * @path /users
-     */
-    match /users {
-        allow list: if isSignedIn();
-    }
-
-
-    /**
-     * @description Manages user profile data. Users can only create their own profile.
-     * Any authenticated user can get profiles for ranking.
-     * @path /users/{userId}
-     */
-    match /users/{userId} {
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow get: if isSignedIn();
-      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
-    }
-
-    /**
-     * @description Manages attendance records for a specific user.
-     * @path /users/{userId}/attendance/{attendanceId}
-     */
-    match /users/{userId}/attendance/{attendanceId} {
-      allow create, get, list, update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
-    }
-
-    /**
-     * @description Manages survey responses for a specific user.
-     * @path /users/{userId}/surveyResponses/{surveyResponseId}
-     */
-    match /users/{userId}/surveyResponses/{surveyResponseId} {
-      allow create, get, list, update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
-    }
-
-    /**
-     * @description Manages live questions submitted by a specific user.
-     * @path /users/{userId}/liveQuestions/{liveQuestionId}
-     */
-    match /users/{userId}/liveQuestions/{liveQuestionId} {
-      allow create, get, list, update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
-    }
-
-    /**
-     * @description Manages RetoFIT registrations for a specific user.
-     * @path /users/{userId}/retoFITRegistrations/{retoFITRegistrationId}
-     */
-    match /users/{userId}/retoFITRegistrations/{retoFITRegistrationId} {
-      allow create, get, list, update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
-    }
-
-    /**
-     * @description Allows public read access to news items, restricts write to admins.
-     * @path /news/{newsId}
-     */
-    match /news/{newsId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Allows public read access to congress events, restricts write to admins.
-     * Special rule for seed data.
-     * @path /congressEvents/{congressEventId}
-     */
-    match /congressEvents/{congressEventId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin() || request.resource.data._isSeedData == true;
-    }
-
-    /**
-     * @description Allows public read access to speaker information, restricts write to admins.
-     * @path /speakers/{speakerId}
-     */
-    match /speakers/{speakerId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
