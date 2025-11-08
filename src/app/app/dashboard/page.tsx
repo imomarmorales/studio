@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useCollection, useFirebase, useMemoFirebase, useUser } from "@/firebase";
-import { collection, doc, CollectionReference, Query, query, where, getDocs } from "firebase/firestore";
+import { collection, Query, query, orderBy } from "firebase/firestore";
 import { Calendar, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -12,53 +12,9 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import type { CongressEvent } from "@/lib/types";
 import { QrScannerDialog } from "@/components/events/QrScannerDialog";
-import { EventDetailsDialog }from "@/components/events/EventDetailsDialog";
+import { EventDetailsDialog } from "@/components/events/EventDetailsDialog";
 import { markAttendance } from "@/lib/events";
 import { useToast } from "@/hooks/use-toast";
-
-
-const exampleEvents: CongressEvent[] = [
-  {
-    id: 'evento-1',
-    title: 'Conferencia Inaugural: IA en la Ingeniería',
-    description: 'El Dr. Alan Turing explorará el impacto de la inteligencia artificial en las disciplinas de la ingeniería moderna.',
-    dateTime: '2025-11-18T09:00:00',
-    location: 'Auditorio Principal',
-    imageUrl: 'https://picsum.photos/seed/evento-1/600/400'
-  },
-  {
-    id: 'evento-2',
-    title: 'Taller: Desarrollo de Apps con React y Firebase',
-    description: 'Un taller práctico donde aprenderás a construir aplicaciones web modernas utilizando las tecnologías más demandadas.',
-    dateTime: '2025-11-18T11:00:00',
-    location: 'Laboratorio de Cómputo 1',
-    imageUrl: 'https://picsum.photos/seed/evento-2/600/400'
-  },
-  {
-    id: 'evento-3',
-    title: 'Ponencia: La Revolución del IoT',
-    description: 'Descubre cómo el Internet de las Cosas está transformando la industria y la vida cotidiana.',
-    dateTime: '2025-11-19T10:00:00',
-    location: 'Auditorio B',
-    imageUrl: 'https://picsum.photos/seed/evento-3/600/400'
-  },
-  {
-    id: 'evento-4',
-    title: 'Concurso de Programación #CodingChallenge',
-    description: 'Demuestra tus habilidades de programación y compite por increíbles premios. ¡Inscripciones abiertas!',
-    dateTime: '2025-11-19T14:00:00',
-    location: 'Sala de Usos Múltiples',
-    imageUrl: 'https://picsum.photos/seed/evento-4/600/400'
-  },
-  {
-    id: 'evento-5',
-    title: 'Mesa Redonda: El Futuro de las Energías Renovables',
-    description: 'Un panel de expertos discutirá los avances y desafíos de las energías limpias en México y el mundo.',
-    dateTime: '2025-11-20T12:00:00',
-    location: 'Auditorio Principal',
-    imageUrl: 'https://picsum.photos/seed/evento-5/600/400'
-  }
-];
 
 
 export default function DashboardPage() {
@@ -71,18 +27,12 @@ export default function DashboardPage() {
   const [isScannerOpen, setScannerOpen] = useState(false);
   const [lastScannedEventId, setLastScannedEventId] = useState<string | null>(null);
 
-  // Use hardcoded events for now
-  const events = exampleEvents;
-  const areEventsLoading = false;
-
-  /*
   const eventsQuery = useMemoFirebase(() => {
       if (!firestore) return null;
-      return collection(firestore, 'congressEvents') as Query<CongressEvent>;
+      return query(collection(firestore, 'congressEvents'), orderBy('dateTime', 'asc')) as Query<CongressEvent>;
   }, [firestore]);
 
   const { data: events, isLoading: areEventsLoading } = useCollection<CongressEvent>(eventsQuery);
-  */
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -97,7 +47,6 @@ export default function DashboardPage() {
       return;
     }
     
-    // Prevent re-scanning the same code immediately
     if(eventId === lastScannedEventId) return;
 
     setLastScannedEventId(eventId);
@@ -110,7 +59,6 @@ export default function DashboardPage() {
       toast({ variant: 'destructive', title: 'Error al Registrar Asistencia', description: error.message });
     }
     
-    // Allow re-scanning after a delay
     setTimeout(() => setLastScannedEventId(null), 2000);
   };
 
@@ -144,7 +92,16 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {!isLoading && (
+      {!isLoading && (!events || events.length === 0) && (
+        <Card>
+            <CardContent className="p-8 text-center">
+                <h3 className="text-lg font-semibold">No hay eventos programados</h3>
+                <p className="text-muted-foreground">Vuelve a consultar más tarde. Los administradores están trabajando en la agenda.</p>
+            </CardContent>
+        </Card>
+      )}
+
+      {!isLoading && events && events.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {events?.map((event) => (
             <Card key={event.id} className="flex flex-col overflow-hidden">
@@ -181,7 +138,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Dialog for Event Details */}
       <EventDetailsDialog 
         event={selectedEventForDetails} 
         isOpen={!!selectedEventForDetails}
@@ -189,14 +145,10 @@ export default function DashboardPage() {
         onMarkAttendanceClick={() => {
             if (selectedEventForDetails) {
                 setScannerOpen(true);
-                // We keep the details dialog open in case the user wants to see it again.
-                // but if we want to close it, we should do:
-                // setSelectedEventForDetails(null);
             }
         }}
       />
 
-      {/* Dialog for QR Scanner */}
       <QrScannerDialog 
         isOpen={isScannerOpen}
         onOpenChange={setScannerOpen}

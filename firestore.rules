@@ -53,11 +53,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description By default, listing users is disallowed for security reasons.
+     * @description Allows admins to list users.
      * @path /users
      */
     match /users {
-        allow list: if false;
+        allow list: if isAdmin();
     }
 
 
@@ -104,6 +104,7 @@ service cloud.firestore {
 
     /**
      * @description Allows public read access to congress events, restricts write to admins.
+     * Special rule for seed data.
      * @path /congressEvents/{congressEventId}
      */
     match /congressEvents/{congressEventId} {

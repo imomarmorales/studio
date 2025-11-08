@@ -5,6 +5,7 @@ export interface CongressEvent {
     dateTime: string;
     location: string;
     imageUrl?: string;
+    _isSeedData?: boolean;
 }
 
 export interface Participant {

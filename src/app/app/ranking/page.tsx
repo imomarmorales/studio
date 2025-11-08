@@ -16,26 +16,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit, Query } from 'firebase/firestore';
+import type { Participant } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Mock data for participants
-const mockParticipants = [
-  { id: '1', name: 'Kalam Suresh', points: 59705, avatarUrl: 'https://picsum.photos/seed/user1/200' },
-  { id: '2', name: 'Jatin Raj', points: 51231, avatarUrl: 'https://picsum.photos/seed/user2/200' },
-  { id: '3', name: 'Harsh Dave', points: 50442, avatarUrl: 'https://picsum.photos/seed/user3/200' },
-  { id: '4', name: 'Alex Ensina', points: 42123, avatarUrl: 'https://picsum.photos/seed/user4/200' },
-  { id: '5', name: 'Jack Luis', points: 41754, avatarUrl: 'https://picsum.photos/seed/user5/200' },
-  { id: '6', name: 'Nathanial Do', points: 40210, avatarUrl: 'https://picsum.photos/seed/user6/200' },
-  { id: '7', name: 'Majorie Kane', points: 40020, avatarUrl: 'https://picsum.photos/seed/user7/200' },
-  { id: '8', name: 'Karl Xie', points: 39542, avatarUrl: 'https://picsum.photos/seed/user8/200' },
-  { id: '9', name: 'Ana Lopez', points: 38100, avatarUrl: 'https://picsum.photos/seed/user9/200' },
-  { id: '10', name: 'Carlos Gomez', points: 37500, avatarUrl: 'https://picsum.photos/seed/user10/200' },
-].sort((a, b) => b.points - a.points); // Sort by points descending
-
-const topPlayers = mockParticipants.slice(0, 3);
-const otherPlayers = mockParticipants.slice(3);
-
-const podiumOrderMobile = [...topPlayers]; // 1st, 2nd, 3rd
-const podiumOrderDesktop = [topPlayers[1], topPlayers[0], topPlayers[2]]; // 2nd, 1st, 3rd
 
 const Medal = ({ rank }: { rank: 1 | 2 | 3 }) => {
   const medalColors = {
@@ -52,6 +37,21 @@ const Medal = ({ rank }: { rank: 1 | 2 | 3 }) => {
 
 
 export default function RankingPage() {
+  const { firestore } = useFirebase();
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), orderBy('points', 'desc')) as Query<Participant>;
+  }, [firestore]);
+
+  const { data: participants, isLoading } = useCollection<Participant>(usersQuery);
+
+  const topPlayers = participants?.slice(0, 3) || [];
+  const otherPlayers = participants?.slice(3) || [];
+
+  const podiumOrderMobile = [...topPlayers]; // 1st, 2nd, 3rd
+  const podiumOrderDesktop = topPlayers.length === 3 ? [topPlayers[1], topPlayers[0], topPlayers[2]] : [...topPlayers]; // 2nd, 1st, 3rd
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -59,43 +59,56 @@ export default function RankingPage() {
         description="¡Acumula puntos y gana premios!"
       />
       
+      {isLoading && (
+        <div className="grid md:grid-cols-3 gap-4 items-end">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-40 w-full" />
+        </div>
+      )}
+
       {/* Top 3 Players - Desktop */}
-      <div className="hidden md:grid md:grid-cols-3 gap-4 justify-items-center items-end">
-        {podiumOrderDesktop.map((player, index) => {
-           const rank = [2, 1, 3][index] as 1 | 2 | 3;
-          return (
-          <Card key={player.id} className={`relative w-full max-w-sm text-center p-6 transform transition-transform ${rank === 1 ? 'scale-110' : 'scale-100'}`}>
-            <Medal rank={rank} />
-            <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary">
-              <AvatarImage src={player.avatarUrl} alt={player.name} />
-              <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <h3 className="text-xl font-bold">{player.name}</h3>
-            <p className="text-primary font-semibold">{player.points.toLocaleString()} pts</p>
-          </Card>
-        )})}
-      </div>
+      {!isLoading && topPlayers.length > 0 && (
+        <div className="hidden md:grid md:grid-cols-3 gap-4 justify-items-center items-end">
+          {podiumOrderDesktop.map((player, index) => {
+            const rank = topPlayers.length === 3 ? [2, 1, 3][index] as 1 | 2 | 3 : (index + 1) as 1 | 2 | 3;
+            return (
+            <Card key={player.id} className={`relative w-full max-w-sm text-center p-6 transform transition-transform ${rank === 1 ? 'scale-110' : 'scale-100'}`}>
+              <Medal rank={rank} />
+              <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-primary">
+                <AvatarImage src={player.avatarUrl || `https://picsum.photos/seed/${player.id}/200`} alt={player.name} />
+                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <h3 className="text-xl font-bold">{player.name}</h3>
+              <p className="text-primary font-semibold">{player.points.toLocaleString()} pts</p>
+            </Card>
+          )})}
+        </div>
+      )}
+
 
       {/* Top 3 Players - Mobile */}
-      <div className="flex md:hidden gap-2 justify-center items-end">
-        {podiumOrderMobile.map((player, index) => {
-           const rank = (index + 1) as 1 | 2 | 3;
-           const scale = rank === 1 ? 'scale-110 z-10' : 'scale-90';
-           const avatarSize = rank === 1 ? 'w-20 h-20' : 'w-16 h-16';
-           const textSize = rank === 1 ? 'text-base' : 'text-sm';
+      {!isLoading && topPlayers.length > 0 && (
+         <div className="flex md:hidden gap-2 justify-center items-end">
+            {podiumOrderMobile.map((player, index) => {
+               const rank = (index + 1) as 1 | 2 | 3;
+               const scale = rank === 1 ? 'scale-110 z-10' : 'scale-90';
+               const avatarSize = rank === 1 ? 'w-20 h-20' : 'w-16 h-16';
+               const textSize = rank === 1 ? 'text-base' : 'text-sm';
 
-          return (
-          <Card key={player.id} className={`relative w-1/3 text-center p-2 transform transition-transform ${scale} ${rank === 1 ? 'bg-primary/5' : ''}`}>
-            {rank < 4 && <Medal rank={rank} />}
-            <Avatar className={`${avatarSize} mx-auto mb-2 border-2 border-primary`}>
-              <AvatarImage src={player.avatarUrl} alt={player.name} />
-              <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <h3 className={`font-bold ${textSize} truncate`}>{player.name}</h3>
-            <p className="text-primary font-semibold text-xs">{player.points.toLocaleString()} pts</p>
-          </Card>
-        )})}
-      </div>
+              return (
+              <Card key={player.id} className={`relative w-1/3 text-center p-2 transform transition-transform ${scale} ${rank === 1 ? 'bg-primary/5' : ''}`}>
+                {rank < 4 && <Medal rank={rank} />}
+                <Avatar className={`${avatarSize} mx-auto mb-2 border-2 border-primary`}>
+                  <AvatarImage src={player.avatarUrl || `https://picsum.photos/seed/${player.id}/200`} alt={player.name} />
+                  <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <h3 className={`font-bold ${textSize} truncate`}>{player.name}</h3>
+                <p className="text-primary font-semibold text-xs">{player.points.toLocaleString()} pts</p>
+              </Card>
+            )})}
+        </div>
+      )}
 
 
       {/* Rest of the players */}
@@ -113,13 +126,20 @@ export default function RankingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {otherPlayers.map((player, index) => (
+              {isLoading && Array.from({length: 5}).map((_, i) => (
+                <TableRow key={i}>
+                    <TableCell><Skeleton className="h-10 w-10" /></TableCell>
+                    <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-10 w-12 ml-auto" /></TableCell>
+                </TableRow>
+              ))}
+              {!isLoading && otherPlayers.map((player, index) => (
                 <TableRow key={player.id}>
                   <TableCell className="font-medium text-lg">{index + 4}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={player.avatarUrl} alt={player.name} />
+                        <AvatarImage src={player.avatarUrl || `https://picsum.photos/seed/${player.id}/200`} alt={player.name} />
                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{player.name}</span>
@@ -128,6 +148,13 @@ export default function RankingPage() {
                   <TableCell className="text-right text-muted-foreground">{player.points.toLocaleString()}</TableCell>
                 </TableRow>
               ))}
+                 {!isLoading && (!participants || participants.length === 0) && (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                        El ranking está vacío. ¡Participa en eventos para empezar a sumar puntos!
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
