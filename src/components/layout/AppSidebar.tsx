@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 
 const menuItems = [
   { href: '/app/dashboard', label: 'Mi Panel', icon: Home },
-  { href: '/app/events', label: 'Eventos', icon: Calendar },
+  { href: '/app/agenda', label: 'Agenda y Eventos', icon: Calendar },
   { href: '/app/ranking', label: 'Ranking', icon: Medal },
   { href: '/app/noticias', label: 'Noticias', icon: Newspaper },
   { href: '/app/perfil', label: 'Mi Perfil', icon: User },
