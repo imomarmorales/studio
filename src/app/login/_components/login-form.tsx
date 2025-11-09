@@ -17,42 +17,41 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import type { Participant } from '@/lib/types';
+
 
 const formSchema = z.object({
   name: z.string().optional(),
-  email: z.string().min(1, 'El correo es requerido.'),
+  email: z.string().email('Por favor, introduce un correo válido.'),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.'),
 });
 
-const studentEmailSchema = z.string().email('Por favor, introduce un correo válido.').refine(
+const studentEmailSchema = z.string().email().refine(
     (email) => email.toLowerCase().endsWith('@alumnos.uat.edu.mx'),
-    {
-      message: 'El correo debe terminar en @alumnos.uat.edu.mx',
-    }
+    'El correo debe ser @alumnos.uat.edu.mx'
 );
+
+const adminEmailSchema = z.literal('admin@congreso.mx');
+const adminPasswordSchema = z.literal('admin123');
 
 const registrationSchema = formSchema.extend({
   name: z.string().min(3, 'El nombre es requerido.'),
-  email: studentEmailSchema,
+  email: z.union([studentEmailSchema, adminEmailSchema]),
 });
 
 const loginSchema = formSchema.extend({
-    email: z.union([
-        z.literal('admin'),
-        studentEmailSchema
-    ], {
-        errorMap: () => ({ message: "Correo inválido o no permitido." })
-    })
+  email: z.union([studentEmailSchema, adminEmailSchema], {
+    errorMap: () => ({ message: "El correo debe ser de @alumnos.uat.edu.mx o el correo de administrador." })
+  }),
 });
 
 
@@ -62,7 +61,13 @@ export function LoginForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const { firestore } = useFirebase();
-  const { isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
+
+  const userDocRef = useMemoFirebase(
+    () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
+  const { data: participant } = useDoc<Participant>(userDocRef);
 
   const currentSchema = isRegistering ? registrationSchema : loginSchema;
 
@@ -75,6 +80,16 @@ export function LoginForm() {
     },
   });
 
+  React.useEffect(() => {
+    if (user && participant) {
+      if (participant.role === 'admin') {
+        router.push('/admin/users');
+      } else {
+        router.push('/app/dashboard');
+      }
+    }
+  }, [user, participant, router]);
+
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
     if (!auth || !firestore) {
@@ -83,15 +98,6 @@ export function LoginForm() {
         title: 'Error',
         description: 'El servicio de autenticación no está disponible.',
       });
-      return;
-    }
-
-    // Admin login
-    if (values.email.toLowerCase() === 'admin' && values.password === 'admin1') {
-      // This is a simple client-side redirect.
-      // In a real app, you would handle admin auth securely.
-      toast({ title: '¡Bienvenido, Admin!', description: 'Redirigiendo al panel de administración.' });
-      router.push('/admin/users');
       return;
     }
 
@@ -108,6 +114,8 @@ export function LoginForm() {
 
         // Update Firebase Auth profile
         await updateProfile(user, { displayName: name });
+        
+        const isAdmin = values.email === 'admin@congreso.mx';
 
         // Create user document in Firestore
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -116,6 +124,7 @@ export function LoginForm() {
           name: name,
           email: user.email,
           points: 0,
+          role: isAdmin ? 'admin' : 'alumno',
           digitalCredentialQR: user.uid,
           avatarUrl: `https://picsum.photos/seed/${user.uid}/200`
         });
@@ -124,12 +133,14 @@ export function LoginForm() {
           title: '¡Registro Exitoso!',
           description: 'Hemos creado tu cuenta.',
         });
-        router.push('/app/dashboard');
+        
+        // Redirection will be handled by the useEffect hook
+        
       } else {
         // Login logic
         await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
-        router.push('/app/dashboard');
+        // Redirection will be handled by the useEffect hook
       }
     } catch (error: any) {
       console.error(error.code, error.message);

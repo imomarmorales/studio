@@ -8,6 +8,7 @@ export interface Participant {
   photoURL?: string; // Add this line
   digitalCredentialQR: string; // Contains the user's UID
   points: number;
+  role: 'admin' | 'alumno';
 }
 
 export interface CongressEvent {

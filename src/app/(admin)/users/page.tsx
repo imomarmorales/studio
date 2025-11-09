@@ -17,12 +17,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Participant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+
 
 function UserRowSkeleton() {
   return (
@@ -36,6 +38,9 @@ function UserRowSkeleton() {
           <Skeleton className="h-3 w-64" />
         </div>
       </TableCell>
+      <TableCell>
+        <Skeleton className="h-6 w-16" />
+      </TableCell>
       <TableCell className="text-right">
         <Skeleton className="h-4 w-16 ml-auto" />
       </TableCell>
@@ -47,7 +52,7 @@ export default function ManageUsersPage() {
   const { firestore } = useFirebase();
   
   const usersQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'users') : null),
+    () => (firestore ? query(collection(firestore, 'users'), where('role', '==', 'alumno')) : null),
     [firestore]
   );
   
@@ -74,7 +79,7 @@ export default function ManageUsersPage() {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Error al Cargar Usuarios</AlertTitle>
               <AlertDescription>
-                No se pudieron cargar los datos de los usuarios. Es posible que haya un problema con los permisos de la base de datos.
+                No se pudieron cargar los datos de los usuarios. Es posible que no tengas los permisos necesarios.
                 <pre className="mt-2 text-xs bg-destructive-foreground/10 p-2 rounded"><code>{error.message}</code></pre>
               </AlertDescription>
             </Alert>
@@ -84,6 +89,7 @@ export default function ManageUsersPage() {
               <TableRow>
                 <TableHead className="w-[100px]">Avatar</TableHead>
                 <TableHead>Nombre y Correo</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead className="text-right">Puntos</TableHead>
               </TableRow>
             </TableHeader>
@@ -109,6 +115,9 @@ export default function ManageUsersPage() {
                     <TableCell>
                       <div className="font-medium">{user.name}</div>
                       <div className="text-sm text-muted-foreground">{user.email}</div>
+                    </TableCell>
+                     <TableCell>
+                      <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>{user.role}</Badge>
                     </TableCell>
                     <TableCell className="text-right">{user.points}</TableCell>
                   </TableRow>

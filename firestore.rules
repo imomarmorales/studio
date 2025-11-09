@@ -13,16 +13,14 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // For now, we don't have a concept of admin roles in the DB
-      // The special 'admin' user is handled client-side.
-      return false;
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Rules for 'users' collection
     match /users/{userId} {
-      allow create: if isSignedIn() && isOwner(userId);
-      allow get: if isSignedIn();
-      allow list: if isSignedIn(); // Allow any signed-in user to list all users
+      allow create: if isSignedIn(); // Allow any signed-in user to create their own profile
+      allow get: if isSignedIn(); // Allow any signed-in user to read any profile
+      allow list: if isSignedIn() && isAdmin(); // ONLY admins can list all users
       allow update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 

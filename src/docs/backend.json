@@ -30,13 +30,18 @@
         "points": {
           "type": "number",
           "description": "Total gamification points earned by the participant."
+        },
+        "role": {
+            "type": "string",
+            "description": "The role of the user, e.g., 'alumno' or 'admin'."
         }
       },
       "required": [
         "id",
         "name",
         "email",
-        "digitalCredentialQR"
+        "digitalCredentialQR",
+        "role"
       ]
     }
   },
