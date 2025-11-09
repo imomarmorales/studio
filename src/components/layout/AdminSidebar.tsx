@@ -16,7 +16,6 @@ import { usePathname } from 'next/navigation';
 
 const menuItems = [
     { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
-    { href: '/admin/users', label: 'Gestionar Usuarios', icon: Users },
 ]
 
 export function AdminSidebar() {

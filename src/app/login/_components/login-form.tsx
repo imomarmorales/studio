@@ -126,7 +126,7 @@ export function LoginForm() {
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
         
         if (values.email === 'admin@congreso.mx') {
-            router.push('/admin/users');
+            router.push('/admin/events');
         } else {
             router.push('/app/dashboard');
         }
