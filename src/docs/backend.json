@@ -38,92 +38,6 @@
         "email",
         "digitalCredentialQR"
       ]
-    },
-    "CongressEvent": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "CongressEvent",
-      "type": "object",
-      "description": "Represents a specific event within the congress.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the CongressEvent entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the event."
-        },
-        "description": {
-          "type": "string",
-          "description": "Detailed description of the event."
-        },
-        "dateTime": {
-          "type": "string",
-          "description": "Date and time of the event.",
-          "format": "date-time"
-        },
-        "location": {
-          "type": "string",
-          "description": "The location or modality of the event (e.g., Auditorium, Online)."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL of the event's representative image.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "dateTime",
-        "location"
-      ]
-    },
-    "Attendance": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Attendance",
-      "type": "object",
-      "description": "Represents a record of a participant's attendance at a specific congress event.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Attendance entity."
-        },
-        "participantId": {
-          "type": "string",
-          "description": "Reference to Participant (UID)."
-        },
-        "congressEventId": {
-          "type": "string",
-          "description": "Reference to CongressEvent."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp of when the attendance was recorded.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "participantId",
-        "congressEventId",
-        "timestamp"
-      ]
-    },
-    "Administrator": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Administrator",
-      "type": "object",
-      "description": "Represents an administrator user with special privileges.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "The Firebase Auth UID of the admin user."
-        }
-      },
-      "required": [
-        "id"
-      ]
     }
   },
   "auth": {
@@ -133,22 +47,6 @@
   },
   "firestore": {
     "structure": [
-      {
-        "path": "roles_admin/{uid}",
-        "definition": {
-          "entityName": "Administrator",
-          "schema": {
-            "$ref": "#/backend/entities/Administrator"
-          },
-          "description": "Collection to store administrator roles. Document ID is the user's UID.",
-          "params": [
-            {
-              "name": "uid",
-              "description": "The Firebase Auth UID of the administrator."
-            }
-          ]
-        }
-      },
       {
         "path": "users/{userId}",
         "definition": {
@@ -161,42 +59,6 @@
             {
               "name": "userId",
               "description": "The Firebase Auth UID of the participant."
-            }
-          ]
-        }
-      },
-      {
-        "path": "users/{userId}/attendance/{attendanceId}",
-        "definition": {
-          "entityName": "Attendance",
-          "schema": {
-            "$ref": "#/backend/entities/Attendance"
-          },
-          "description": "Sub-collection to store attendance records for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            },
-            {
-              "name": "attendanceId",
-              "description": "The unique ID of the attendance record."
-            }
-          ]
-        }
-      },
-      {
-        "path": "congressEvents/{congressEventId}",
-        "definition": {
-          "entityName": "CongressEvent",
-          "schema": {
-            "$ref": "#/backend/entities/CongressEvent"
-          },
-          "description": "Collection to store all congress events. Managed by admins.",
-          "params": [
-            {
-              "name": "congressEventId",
-              "description": "The unique ID of the congress event."
             }
           ]
         }
