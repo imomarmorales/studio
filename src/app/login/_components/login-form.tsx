@@ -17,14 +17,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useUser, useFirebase } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import type { Participant } from '@/lib/types';
 
 
 const formSchema = z.object({
@@ -65,12 +64,6 @@ export function LoginForm() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
 
-  const userDocRef = useMemoFirebase(
-    () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
-    [user, firestore]
-  );
-  const { data: participant } = useDoc<Participant>(userDocRef);
-
   const currentSchema = isRegistering ? registrationSchema : loginSchema;
 
   const form = useForm<z.infer<typeof currentSchema>>({
@@ -81,17 +74,6 @@ export function LoginForm() {
       password: '',
     },
   });
-
-  React.useEffect(() => {
-    // Redirect if user is already logged in and we have their role
-    if (user && participant) {
-        if (participant.role === 'admin') {
-            router.push('/admin/users');
-        } else {
-            router.push('/app/dashboard');
-        }
-    }
-  }, [user, participant, router]);
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
     if (!auth || !firestore) {
@@ -105,8 +87,13 @@ export function LoginForm() {
 
     // Special admin login
     if (!isRegistering && values.email === 'admin' && values.password === 'admin1') {
-      toast({ title: '¡Has iniciado sesión como Administrador!', description: 'Bienvenido de vuelta.' });
-      router.push('/admin/users');
+      try {
+        await signInWithEmailAndPassword(auth, "admin@congreso.mx", "admin123");
+        toast({ title: '¡Has iniciado sesión como Administrador!', description: 'Bienvenido de vuelta.' });
+        router.push('/admin/users');
+      } catch(e) {
+          toast({ variant: 'destructive', title: 'Error de Administrador', description: 'Credenciales de administrador incorrectas o la cuenta no existe. Por favor, regístrela primero.' });
+      }
       return;
     }
 
@@ -155,7 +142,8 @@ export function LoginForm() {
         // Login logic
         await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
-        // The useEffect will handle redirection
+        // Redirection will be handled by the protected pages themselves
+        router.push('/app/dashboard');
       }
     } catch (error: any) {
       console.error(error.code, error.message);
