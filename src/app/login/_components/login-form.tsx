@@ -91,7 +91,7 @@ export function LoginForm() {
       // This is a simple client-side redirect.
       // In a real app, you would handle admin auth securely.
       toast({ title: '¡Bienvenido, Admin!', description: 'Redirigiendo al panel de administración.' });
-      router.push('/admin/events');
+      router.push('/admin/users');
       return;
     }
 
