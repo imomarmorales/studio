@@ -1,39 +1,9 @@
 'use client';
 
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { seedEvents } from '@/lib/admin-actions';
-
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ManageEventsPage() {
-    const { toast } = useToast();
-
-    const handleSeedEvents = async () => {
-        try {
-            await seedEvents();
-            toast({
-                title: "Éxito",
-                description: "Los eventos de ejemplo han sido cargados correctamente.",
-            });
-        } catch (error: any) {
-            console.error("Error seeding events:", error);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "No se pudieron cargar los eventos de ejemplo. Revisa la consola para más detalles.",
-            });
-        }
-    };
-
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -42,14 +12,15 @@ export default function ManageEventsPage() {
       />
       <Card>
         <CardHeader>
-          <CardTitle>Cargar Datos de Ejemplo</CardTitle>
+          <CardTitle>Página de Configuración de Administrador</CardTitle>
           <CardDescription>
-            Usa este botón para poblar la base de datos con eventos de
-            ejemplo y probar la funcionalidad de la aplicación.
+            Bienvenido al panel de administración.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleSeedEvents}>Cargar Eventos de Ejemplo</Button>
+          <p className="text-muted-foreground">
+            Aquí podrás configurar los eventos y gestionar usuarios.
+          </p>
         </CardContent>
       </Card>
     </div>
