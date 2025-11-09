@@ -28,33 +28,33 @@ import { useFirebase } from '@/firebase';
 
 const formSchema = z.object({
   name: z.string().optional(),
-  email: z.string().email('Por favor, introduce un correo válido.'),
+  email: z.string().min(1, 'El correo es requerido.'),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.'),
 });
 
-const emailValidation = z
-  .string()
-  .email('Por favor, introduce un correo válido.')
-  .refine(
-    (email) =>
-      email.toLowerCase() === 'admin' || email.endsWith('@alumnos.uat.edu.mx'),
+const studentEmailSchema = z.string().email('Por favor, introduce un correo válido.').refine(
+    (email) => email.toLowerCase().endsWith('@alumnos.uat.edu.mx'),
     {
       message: 'El correo debe terminar en @alumnos.uat.edu.mx',
     }
-  );
+);
 
 const registrationSchema = formSchema.extend({
   name: z.string().min(3, 'El nombre es requerido.'),
-  email: emailValidation.refine((email) => email !== 'admin', {
-    message: 'Este correo está reservado.',
-  }),
+  email: studentEmailSchema,
 });
 
 const loginSchema = formSchema.extend({
-    email: emailValidation,
+    email: z.union([
+        z.literal('admin'),
+        studentEmailSchema
+    ], {
+        errorMap: () => ({ message: "Correo inválido o no permitido." })
+    })
 });
+
 
 export function LoginForm() {
   const [isRegistering, setIsRegistering] = React.useState(false);
