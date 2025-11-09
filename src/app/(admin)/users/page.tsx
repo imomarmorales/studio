@@ -100,7 +100,7 @@ export default function ManageUsersPage() {
                   <TableRow key={user.id}>
                     <TableCell>
                        <Avatar>
-                        <AvatarImage src={user.avatarUrl || user.photoURL} alt={user.name} />
+                        <AvatarImage src={user.photoURL || user.avatarUrl} alt={user.name} />
                         <AvatarFallback>
                           {user.name ? user.name.charAt(0).toUpperCase() : '?'}
                         </AvatarFallback>
