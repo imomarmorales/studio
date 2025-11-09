@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +50,10 @@ const registrationSchema = formSchema.extend({
 });
 
 const loginSchema = formSchema.extend({
-    email: z.string().min(1, 'El correo es requerido.').or(z.literal('admin')),
+    email: z.union([
+        z.string().email("Por favor, introduce un correo válido."),
+        z.literal('admin')
+    ]).refine(val => val.length > 0, "El correo es requerido."),
 });
 
 
@@ -100,6 +103,14 @@ export function LoginForm() {
       return;
     }
 
+    // Special admin login
+    if (!isRegistering && values.email === 'admin' && values.password === 'admin1') {
+      toast({ title: '¡Has iniciado sesión como Administrador!', description: 'Bienvenido de vuelta.' });
+      router.push('/admin/users');
+      return;
+    }
+
+
     try {
       if (isRegistering) {
         // Registration logic for students or admin
@@ -135,19 +146,16 @@ export function LoginForm() {
 
         toast({
           title: '¡Registro Exitoso!',
-          description: 'Hemos creado tu cuenta.',
+          description: 'Hemos creado tu cuenta. Ahora puedes iniciar sesión.',
         });
+        setIsRegistering(false); // Switch to login view
+        form.reset();
         
       } else {
         // Login logic
-        if (values.email === 'admin' && values.password === 'admin1') {
-            toast({ title: '¡Has iniciado sesión como Administrador!', description: 'Bienvenido de vuelta.' });
-            router.push('/admin/users');
-            return;
-        }
-
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
+        // The useEffect will handle redirection
       }
     } catch (error: any) {
       console.error(error.code, error.message);
