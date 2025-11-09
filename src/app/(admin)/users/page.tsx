@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { Participant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -41,6 +41,9 @@ function UserRowSkeleton() {
       <TableCell>
         <Skeleton className="h-6 w-16" />
       </TableCell>
+       <TableCell>
+        <Skeleton className="h-6 w-16" />
+      </TableCell>
       <TableCell className="text-right">
         <Skeleton className="h-4 w-16 ml-auto" />
       </TableCell>
@@ -52,7 +55,7 @@ export default function ManageUsersPage() {
   const { firestore } = useFirebase();
   
   const usersQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'users'), where('role', '==', 'alumno')) : null),
+    () => (firestore ? query(collection(firestore, 'users')) : null),
     [firestore]
   );
   
@@ -90,7 +93,8 @@ export default function ManageUsersPage() {
                 <TableHead className="w-[100px]">Avatar</TableHead>
                 <TableHead>Nombre y Correo</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead className="text-right">Puntos</TableHead>
+                <TableHead>Puntos</TableHead>
+                <TableHead className="text-right">ID de Usuario</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -106,7 +110,7 @@ export default function ManageUsersPage() {
                   <TableRow key={user.id}>
                     <TableCell>
                        <Avatar>
-                        <AvatarImage src={user.photoURL || user.avatarUrl} alt={user.name} />
+                        <AvatarImage src={user.photoURL} alt={user.name} />
                         <AvatarFallback>
                           {user.name ? user.name.charAt(0).toUpperCase() : '?'}
                         </AvatarFallback>
@@ -119,7 +123,10 @@ export default function ManageUsersPage() {
                      <TableCell>
                       <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>{user.role}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">{user.points}</TableCell>
+                     <TableCell>
+                        {user.points}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">{user.id}</TableCell>
                   </TableRow>
                 ))
               )}
