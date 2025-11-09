@@ -4,8 +4,7 @@ export interface Participant {
   id: string; // Corresponds to Firebase Auth UID
   name: string;
   email: string;
-  avatarUrl?: string;
-  photoURL?: string; // Add this line
+  photoURL?: string;
   digitalCredentialQR: string; // Contains the user's UID
   points: number;
   role: 'admin' | 'alumno';
@@ -21,9 +20,9 @@ export interface CongressEvent {
 }
 
 export interface Attendance {
-  id: string;
+  id: string; // auto-generated
   participantId: string;
-  congressEventId: string;
+  eventId: string;
   timestamp: Timestamp;
 }
 

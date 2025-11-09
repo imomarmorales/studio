@@ -19,7 +19,7 @@
           "description": "Email address of the participant.",
           "format": "email"
         },
-        "avatarUrl": {
+        "photoURL": {
           "type": "string",
           "description": "URL of the participant's profile picture."
         },
@@ -32,8 +32,8 @@
           "description": "Total gamification points earned by the participant."
         },
         "role": {
-            "type": "string",
-            "description": "The role of the user, e.g., 'alumno' or 'admin'."
+          "type": "string",
+          "description": "The role of the user, e.g., 'alumno' or 'admin'."
         }
       },
       "required": [
@@ -43,6 +43,60 @@
         "digitalCredentialQR",
         "role"
       ]
+    },
+    "CongressEvent": {
+      "title": "Congress Event",
+      "type": "object",
+      "description": "Represents a single event within the congress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the event (used for the QR code)."
+        },
+        "title": {
+          "type": "string",
+          "description": "The official title of the event."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the event."
+        },
+        "dateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date and time of the event in ISO 8601 format."
+        },
+        "location": {
+          "type": "string",
+          "description": "The location where the event will take place."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "A URL for a promotional image for the event."
+        }
+      },
+      "required": ["id", "title", "description", "dateTime", "location"]
+    },
+    "Attendance": {
+      "title": "Attendance Record",
+      "type": "object",
+      "description": "Records a participant's attendance at a specific congress event.",
+      "properties": {
+        "participantId": {
+          "type": "string",
+          "description": "The ID of the participant who attended."
+        },
+        "eventId": {
+          "type": "string",
+          "description": "The ID of the event that was attended."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the attendance was recorded."
+        }
+      },
+      "required": ["participantId", "eventId", "timestamp"]
     }
   },
   "auth": {
@@ -59,13 +113,27 @@
           "schema": {
             "$ref": "#/backend/entities/Participant"
           },
-          "description": "Collection to store participant profile data. User ID is the Firebase Auth UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the participant."
-            }
-          ]
+          "description": "Collection to store participant profile data. User ID is the Firebase Auth UID."
+        }
+      },
+      {
+        "path": "events/{eventId}",
+        "definition": {
+          "entityName": "CongressEvent",
+          "schema": {
+            "$ref": "#/backend/entities/CongressEvent"
+          },
+          "description": "Collection to store all congress events."
+        }
+      },
+      {
+        "path": "users/{userId}/attendance/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": {
+            "$ref": "#/backend/entities/Attendance"
+          },
+          "description": "Subcollection to store attendance records for a specific user."
         }
       }
     ]

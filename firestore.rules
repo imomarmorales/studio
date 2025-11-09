@@ -21,8 +21,25 @@ service cloud.firestore {
       allow create: if isSignedIn(); // Allow any signed-in user to create their own profile
       allow get: if isSignedIn(); // Allow any signed-in user to read any profile
       allow list: if isSignedIn() && isAdmin(); // ONLY admins can list all users
-      allow update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && isAdmin();
     }
+    
+    // Rules for 'events' collection
+    match /events/{eventId} {
+      allow read: if isSignedIn(); // Any signed-in user can see the events
+      allow list: if isSignedIn(); // Any signed-in user can list events
+      allow create, update, delete: if isSignedIn() && isAdmin(); // Only admins can manage events
+    }
+
+    // Rules for 'attendance' subcollection
+    match /users/{userId}/attendance/{attendanceId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // A user can only create an attendance record for themselves
+      allow create: if isSignedIn() && isOwner(userId);
+    }
+
 
     // Default deny all other collections/paths
     match /{document=**} {
