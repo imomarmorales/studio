@@ -34,16 +34,26 @@ const formSchema = z.object({
     .min(6, 'La contraseña debe tener al menos 6 caracteres.'),
 });
 
-const emailValidation = z.string().refine(
-  (email) => email.endsWith('@alumnos.uat.edu.mx'),
-  {
-    message: 'El correo debe terminar en @alumnos.uat.edu.mx',
-  }
-);
+const emailValidation = z
+  .string()
+  .email('Por favor, introduce un correo válido.')
+  .refine(
+    (email) =>
+      email.toLowerCase() === 'admin' || email.endsWith('@alumnos.uat.edu.mx'),
+    {
+      message: 'El correo debe terminar en @alumnos.uat.edu.mx',
+    }
+  );
 
 const registrationSchema = formSchema.extend({
   name: z.string().min(3, 'El nombre es requerido.'),
-  email: emailValidation,
+  email: emailValidation.refine((email) => email !== 'admin', {
+    message: 'Este correo está reservado.',
+  }),
+});
+
+const loginSchema = formSchema.extend({
+    email: emailValidation,
 });
 
 export function LoginForm() {
@@ -54,7 +64,7 @@ export function LoginForm() {
   const { firestore } = useFirebase();
   const { isUserLoading } = useUser();
 
-  const currentSchema = isRegistering ? registrationSchema : formSchema;
+  const currentSchema = isRegistering ? registrationSchema : loginSchema;
 
   const form = useForm<z.infer<typeof currentSchema>>({
     resolver: zodResolver(currentSchema),
@@ -64,6 +74,12 @@ export function LoginForm() {
       password: '',
     },
   });
+  
+  // Watch for changes in the isRegistering state to re-validate
+  React.useEffect(() => {
+    form.trigger();
+  }, [isRegistering, form]);
+
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
     if (!auth || !firestore) {
@@ -76,7 +92,7 @@ export function LoginForm() {
     }
 
     // Admin login
-    if (values.email === 'admin' && values.password === 'admin1') {
+    if (values.email.toLowerCase() === 'admin' && values.password === 'admin1') {
       // This is a simple client-side redirect.
       // In a real app, you would handle admin auth securely.
       toast({ title: '¡Bienvenido, Admin!', description: 'Redirigiendo al panel de administración.' });
@@ -185,7 +201,10 @@ export function LoginForm() {
           type="button"
           variant="link"
           className="w-full"
-          onClick={() => setIsRegistering(!isRegistering)}
+          onClick={() => {
+            setIsRegistering(!isRegistering);
+            form.reset();
+          }}
         >
           {isRegistering
             ? '¿Ya tienes una cuenta? Inicia sesión'
