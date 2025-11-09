@@ -29,7 +29,7 @@ import type { Participant } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().optional(),
-  email: z.string().email('Por favor, introduce un correo válido.'),
+  email: z.string().email({ message: 'Por favor, introduce un correo válido.' }).or(z.literal('admin')),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.'),
@@ -44,13 +44,13 @@ const adminEmailSchema = z.literal('admin@congreso.mx');
 
 const registrationSchema = formSchema.extend({
   name: z.string().min(3, 'El nombre es requerido.'),
-  email: studentEmailSchema, // Only students can register
+  email: z.union([studentEmailSchema, adminEmailSchema], {
+    errorMap: () => ({ message: "El correo debe ser de @alumnos.uat.edu.mx" })
+  })
 });
 
 const loginSchema = formSchema.extend({
-  email: z.union([studentEmailSchema, adminEmailSchema], {
-    errorMap: () => ({ message: "El correo debe ser de @alumnos.uat.edu.mx o el correo de administrador." })
-  }),
+    email: z.string().min(1, 'El correo es requerido.'),
 });
 
 
@@ -82,7 +82,7 @@ export function LoginForm() {
 
   React.useEffect(() => {
     // Only redirect if we are not on the login page
-    if (user && participant && pathname !== '/login') {
+    if (user && participant && pathname === '/login') {
       if (participant.role === 'admin') {
         router.push('/admin/users');
       } else {
@@ -104,14 +104,19 @@ export function LoginForm() {
 
     try {
       if (isRegistering) {
-        // Registration logic
+        // Registration logic for students or admin
+        if (!('name' in values) || !values.name) {
+            toast({ variant: 'destructive', title: 'Error de Registro', description: 'El nombre es requerido.' });
+            return;
+        }
+        
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           values.email,
           values.password
         );
         const user = userCredential.user;
-        const name = (values as z.infer<typeof registrationSchema>).name;
+        const name = values.name;
 
         // Update Firebase Auth profile
         await updateProfile(user, { displayName: name, photoURL: `https://picsum.photos/seed/${user.uid}/200` });
@@ -134,22 +139,29 @@ export function LoginForm() {
           title: '¡Registro Exitoso!',
           description: 'Hemos creado tu cuenta.',
         });
-        router.push('/app/dashboard');
+        if(isAdmin) {
+            router.push('/admin/users');
+        } else {
+            router.push('/app/dashboard');
+        }
         
       } else {
         // Login logic
+        if (values.email === 'admin' && values.password === 'admin1') {
+            toast({ title: '¡Has iniciado sesión como Administrador!', description: 'Bienvenido de vuelta.' });
+            router.push('/admin/users');
+            return;
+        }
+
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
         
         // After login, we need to check the user's role from Firestore to redirect correctly
         const loggedInUser = userCredential.user;
         const userDocRef = doc(firestore, 'users', loggedInUser.uid);
-        const { data: loggedInParticipant } = await (async () => {
-          const { getDoc } = await import('firebase/firestore');
-          const docSnap = await getDoc(userDocRef);
-          return { data: docSnap.exists() ? docSnap.data() as Participant : null };
-        })();
-
+        const { getDoc } = await import('firebase/firestore');
+        const docSnap = await getDoc(userDocRef);
+        const loggedInParticipant = docSnap.exists() ? docSnap.data() as Participant : null;
 
         if (loggedInParticipant?.role === 'admin') {
             router.push('/admin/users');
@@ -192,7 +204,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
+                <Input placeholder="a1234567890@alumnos.uat.edu.mx o admin" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
