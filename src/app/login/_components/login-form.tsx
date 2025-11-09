@@ -28,7 +28,7 @@ import { doc, setDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().optional(),
-  email: z.string().email({ message: 'Por favor, introduce un correo válido.' }).or(z.literal('admin')),
+  email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.'),
@@ -44,16 +44,11 @@ const adminEmailSchema = z.literal('admin@congreso.mx');
 const registrationSchema = formSchema.extend({
   name: z.string().min(3, 'El nombre es requerido.'),
   email: z.union([studentEmailSchema, adminEmailSchema], {
-    errorMap: () => ({ message: "El correo debe ser de @alumnos.uat.edu.mx" })
+    errorMap: () => ({ message: "El correo debe ser de @alumnos.uat.edu.mx o admin@congreso.mx" })
   })
 });
 
-const loginSchema = formSchema.extend({
-    email: z.union([
-        z.string().email("Por favor, introduce un correo válido."),
-        z.literal('admin')
-    ]).refine(val => val.length > 0, "El correo es requerido."),
-});
+const loginSchema = formSchema;
 
 
 export function LoginForm() {
@@ -62,7 +57,7 @@ export function LoginForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const { firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
+  const { isUserLoading } = useUser();
 
   const currentSchema = isRegistering ? registrationSchema : loginSchema;
 
@@ -84,19 +79,6 @@ export function LoginForm() {
       });
       return;
     }
-
-    // Special admin login
-    if (!isRegistering && values.email === 'admin' && values.password === 'admin1') {
-      try {
-        await signInWithEmailAndPassword(auth, "admin@congreso.mx", "admin123");
-        toast({ title: '¡Has iniciado sesión como Administrador!', description: 'Bienvenido de vuelta.' });
-        router.push('/admin/users');
-      } catch(e) {
-          toast({ variant: 'destructive', title: 'Error de Administrador', description: 'Credenciales de administrador incorrectas o la cuenta no existe. Por favor, regístrela primero.' });
-      }
-      return;
-    }
-
 
     try {
       if (isRegistering) {
@@ -142,8 +124,12 @@ export function LoginForm() {
         // Login logic
         await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
-        // Redirection will be handled by the protected pages themselves
-        router.push('/app/dashboard');
+        
+        if (values.email === 'admin@congreso.mx') {
+            router.push('/admin/users');
+        } else {
+            router.push('/app/dashboard');
+        }
       }
     } catch (error: any) {
       console.error(error.code, error.message);
@@ -180,7 +166,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="a1234567890@alumnos.uat.edu.mx o admin" {...field} />
+                <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
