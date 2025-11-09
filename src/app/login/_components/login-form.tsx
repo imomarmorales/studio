@@ -50,14 +50,13 @@ const registrationSchema = formSchema.extend({
 });
 
 const loginSchema = formSchema.extend({
-    email: z.string().min(1, 'El correo es requerido.'),
+    email: z.string().min(1, 'El correo es requerido.').or(z.literal('admin')),
 });
 
 
 export function LoginForm() {
   const [isRegistering, setIsRegistering] = React.useState(false);
   const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
   const auth = useAuth();
   const { firestore } = useFirebase();
@@ -81,16 +80,15 @@ export function LoginForm() {
   });
 
   React.useEffect(() => {
-    // Only redirect if we are not on the login page
-    if (user && participant && pathname === '/login') {
-      if (participant.role === 'admin') {
-        router.push('/admin/users');
-      } else {
-        router.push('/app/dashboard');
-      }
+    // Redirect if user is already logged in and we have their role
+    if (user && participant) {
+        if (participant.role === 'admin') {
+            router.push('/admin/users');
+        } else {
+            router.push('/app/dashboard');
+        }
     }
-  }, [user, participant, router, pathname]);
-
+  }, [user, participant, router]);
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
     if (!auth || !firestore) {
@@ -139,11 +137,6 @@ export function LoginForm() {
           title: '¡Registro Exitoso!',
           description: 'Hemos creado tu cuenta.',
         });
-        if(isAdmin) {
-            router.push('/admin/users');
-        } else {
-            router.push('/app/dashboard');
-        }
         
       } else {
         // Login logic
@@ -155,19 +148,6 @@ export function LoginForm() {
 
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
-        
-        // After login, we need to check the user's role from Firestore to redirect correctly
-        const loggedInUser = userCredential.user;
-        const userDocRef = doc(firestore, 'users', loggedInUser.uid);
-        const { getDoc } = await import('firebase/firestore');
-        const docSnap = await getDoc(userDocRef);
-        const loggedInParticipant = docSnap.exists() ? docSnap.data() as Participant : null;
-
-        if (loggedInParticipant?.role === 'admin') {
-            router.push('/admin/users');
-        } else {
-            router.push('/app/dashboard');
-        }
       }
     } catch (error: any) {
       console.error(error.code, error.message);
