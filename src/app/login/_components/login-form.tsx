@@ -74,11 +74,6 @@ export function LoginForm() {
       password: '',
     },
   });
-  
-  // Watch for changes in the isRegistering state to re-validate
-  React.useEffect(() => {
-    form.trigger();
-  }, [isRegistering, form]);
 
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
