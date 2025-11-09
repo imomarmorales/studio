@@ -21,7 +21,7 @@ import { collection } from 'firebase/firestore';
 import type { Participant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, User, Users } from 'lucide-react';
+import { AlertTriangle, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 function UserRowSkeleton() {
@@ -100,9 +100,9 @@ export default function ManageUsersPage() {
                   <TableRow key={user.id}>
                     <TableCell>
                        <Avatar>
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarImage src={user.avatarUrl || user.photoURL} alt={user.name} />
                         <AvatarFallback>
-                          {user.name.charAt(0).toUpperCase()}
+                          {user.name ? user.name.charAt(0).toUpperCase() : '?'}
                         </AvatarFallback>
                       </Avatar>
                     </TableCell>

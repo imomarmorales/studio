@@ -5,6 +5,7 @@ export interface Participant {
   name: string;
   email: string;
   avatarUrl?: string;
+  photoURL?: string; // Add this line
   digitalCredentialQR: string; // Contains the user's UID
   points: number;
 }
