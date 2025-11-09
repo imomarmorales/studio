@@ -31,6 +31,9 @@ import {
 } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
@@ -110,7 +113,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 
-export default function ManageEventsPage() {
+function ManageEventsContent() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -165,148 +168,163 @@ export default function ManageEventsPage() {
 
   return (
     <AdminAuthGuard>
-        <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-        <PageHeader
-            title="Gestionar Eventos"
-            description="Crear, editar y administrar los eventos del congreso."
-        />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1">
-            <Card>
-                <CardHeader>
-                <CardTitle>Crear Nuevo Evento</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Nombre del Evento</FormLabel>
-                            <FormControl>
-                            <Input placeholder="Ej. Conferencia de IA" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Descripción</FormLabel>
-                            <FormControl>
-                            <Textarea placeholder="Describe el evento..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="location"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Ubicación</FormLabel>
-                            <FormControl>
-                            <Input placeholder="Ej. Auditorio Principal" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="dateTime"
-                        render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>Fecha y Hora</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                        "w-full pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                        )}
-                                    >
-                                        {field.value ? (
-                                        format(field.value, "PPP")
-                                        ) : (
-                                        <span>Elige una fecha</span>
-                                        )}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
-                                    initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <Button type="submit" disabled={isSubmitting} className="w-full">
-                        {isSubmitting ? (
-                        <Loader2 className="animate-spin" />
-                        ) : (
-                        <PlusCircle />
-                        )}
-                        <span>{isSubmitting ? 'Creando...' : 'Crear Evento'}</span>
-                    </Button>
-                    </form>
-                </Form>
-                </CardContent>
-            </Card>
-            </div>
-            <div className="md:col-span-2">
+       <SidebarProvider>
+        <AdminSidebar />
+        <SidebarInset>
+            <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+            <PageHeader
+                title="Gestionar Eventos"
+                description="Crear, editar y administrar los eventos del congreso."
+            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-1">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Eventos Creados</CardTitle>
-                        <CardDescription>Esta es la lista de eventos programados.</CardDescription>
+                    <CardTitle>Crear Nuevo Evento</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {isLoading && <p>Cargando eventos...</p>}
-                        {error && (
-                            <Alert variant="destructive">
-                                <AlertTitle>Error</AlertTitle>
-                                <AlertDescription>No se pudieron cargar los eventos.</AlertDescription>
-                            </Alert>
-                        )}
-                        <div className="space-y-4">
-                            {events && events.map((event) => (
-                                <Card key={event.id} className="flex items-center justify-between p-4">
-                                    <div className="space-y-1">
-                                        <p className="font-semibold">{event.title}</p>
-                                        <p className="text-sm text-muted-foreground">{new Date(event.dateTime).toLocaleString()}</p>
-                                    </div>
-                                    <Button variant="outline" size="sm" onClick={() => setSelectedEventForQr(event)}>
-                                        <QrCode className="mr-2 h-4 w-4" />
-                                        Ver QR
-                                    </Button>
-                                </Card>
-                            ))}
-                            {!isLoading && events?.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-8">Aún no se han creado eventos.</p>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nombre del Evento</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Ej. Conferencia de IA" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                             )}
-                        </div>
+                        />
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Descripción</FormLabel>
+                                <FormControl>
+                                <Textarea placeholder="Describe el evento..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="location"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Ubicación</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Ej. Auditorio Principal" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="dateTime"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Fecha y Hora</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value ? (
+                                            format(field.value, "PPP")
+                                            ) : (
+                                            <span>Elige una fecha</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                                        initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isSubmitting} className="w-full">
+                            {isSubmitting ? (
+                            <Loader2 className="animate-spin" />
+                            ) : (
+                            <PlusCircle />
+                            )}
+                            <span>{isSubmitting ? 'Creando...' : 'Crear Evento'}</span>
+                        </Button>
+                        </form>
+                    </Form>
                     </CardContent>
                 </Card>
+                </div>
+                <div className="md:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Eventos Creados</CardTitle>
+                            <CardDescription>Esta es la lista de eventos programados.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoading && <p>Cargando eventos...</p>}
+                            {error && (
+                                <Alert variant="destructive">
+                                    <AlertTitle>Error</AlertTitle>
+                                    <AlertDescription>No se pudieron cargar los eventos.</AlertDescription>
+                                </Alert>
+                            )}
+                            <div className="space-y-4">
+                                {events && events.map((event) => (
+                                    <Card key={event.id} className="flex items-center justify-between p-4">
+                                        <div className="space-y-1">
+                                            <p className="font-semibold">{event.title}</p>
+                                            <p className="text-sm text-muted-foreground">{new Date(event.dateTime).toLocaleString()}</p>
+                                        </div>
+                                        <Button variant="outline" size="sm" onClick={() => setSelectedEventForQr(event)}>
+                                            <QrCode className="mr-2 h-4 w-4" />
+                                            Ver QR
+                                        </Button>
+                                    </Card>
+                                ))}
+                                {!isLoading && events?.length === 0 && (
+                                    <p className="text-sm text-muted-foreground text-center py-8">Aún no se han creado eventos.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
-        <EventQrDialog event={selectedEventForQr} isOpen={!!selectedEventForQr} onOpenChange={() => setSelectedEventForQr(null)} />
-        </div>
+            <EventQrDialog event={selectedEventForQr} isOpen={!!selectedEventForQr} onOpenChange={() => setSelectedEventForQr(null)} />
+            </div>
+        </SidebarInset>
+       </SidebarProvider>
     </AdminAuthGuard>
   );
 }
+
+export default function ManageEventsPage() {
+    return (
+        <FirebaseClientProvider>
+            <ManageEventsContent />
+        </FirebaseClientProvider>
+    );
+}
+
+    
