@@ -1,5 +1,5 @@
 import { LoginForm } from './_components/login-form';
-import { PublicLayout }s from '@/components/layout/PublicLayout';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function LoginPage() {
