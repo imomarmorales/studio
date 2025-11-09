@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -41,11 +41,10 @@ const studentEmailSchema = z.string().email().refine(
 );
 
 const adminEmailSchema = z.literal('admin@congreso.mx');
-const adminPasswordSchema = z.literal('admin123');
 
 const registrationSchema = formSchema.extend({
   name: z.string().min(3, 'El nombre es requerido.'),
-  email: z.union([studentEmailSchema, adminEmailSchema]),
+  email: studentEmailSchema, // Only students can register
 });
 
 const loginSchema = formSchema.extend({
@@ -58,6 +57,7 @@ const loginSchema = formSchema.extend({
 export function LoginForm() {
   const [isRegistering, setIsRegistering] = React.useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const auth = useAuth();
   const { firestore } = useFirebase();
@@ -81,14 +81,15 @@ export function LoginForm() {
   });
 
   React.useEffect(() => {
-    if (user && participant) {
+    // Only redirect if we are not on the login page
+    if (user && participant && pathname !== '/login') {
       if (participant.role === 'admin') {
         router.push('/admin/users');
       } else {
         router.push('/app/dashboard');
       }
     }
-  }, [user, participant, router]);
+  }, [user, participant, router, pathname]);
 
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
@@ -113,7 +114,7 @@ export function LoginForm() {
         const name = (values as z.infer<typeof registrationSchema>).name;
 
         // Update Firebase Auth profile
-        await updateProfile(user, { displayName: name });
+        await updateProfile(user, { displayName: name, photoURL: `https://picsum.photos/seed/${user.uid}/200` });
         
         const isAdmin = values.email === 'admin@congreso.mx';
 
@@ -126,21 +127,35 @@ export function LoginForm() {
           points: 0,
           role: isAdmin ? 'admin' : 'alumno',
           digitalCredentialQR: user.uid,
-          avatarUrl: `https://picsum.photos/seed/${user.uid}/200`
+          photoURL: `https://picsum.photos/seed/${user.uid}/200`
         });
 
         toast({
           title: '¡Registro Exitoso!',
           description: 'Hemos creado tu cuenta.',
         });
-        
-        // Redirection will be handled by the useEffect hook
+        router.push('/app/dashboard');
         
       } else {
         // Login logic
-        await signInWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: '¡Has iniciado sesión!', description: 'Bienvenido de vuelta.' });
-        // Redirection will be handled by the useEffect hook
+        
+        // After login, we need to check the user's role from Firestore to redirect correctly
+        const loggedInUser = userCredential.user;
+        const userDocRef = doc(firestore, 'users', loggedInUser.uid);
+        const { data: loggedInParticipant } = await (async () => {
+          const { getDoc } = await import('firebase/firestore');
+          const docSnap = await getDoc(userDocRef);
+          return { data: docSnap.exists() ? docSnap.data() as Participant : null };
+        })();
+
+
+        if (loggedInParticipant?.role === 'admin') {
+            router.push('/admin/users');
+        } else {
+            router.push('/app/dashboard');
+        }
       }
     } catch (error: any) {
       console.error(error.code, error.message);
