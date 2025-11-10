@@ -45,6 +45,12 @@ function initializeFirebase(): {
 function useMemoFirebase<T>(factory: () => T | null, deps: React.DependencyList): T | null {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoizedValue = useMemo(factory, deps);
+  
+  // Mark the object as memoized to satisfy useCollection's validation
+  if (memoizedValue && typeof memoizedValue === 'object') {
+    (memoizedValue as any).__memo = true;
+  }
+  
   return memoizedValue;
 }
 
