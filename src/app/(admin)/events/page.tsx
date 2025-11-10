@@ -127,6 +127,17 @@ export default function ManageEventsPage() {
         title="Gestionar Eventos"
         description="Crear, editar y administrar los eventos del congreso."
       />
+      
+      {/* MENSAJE DE PRUEBA */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-12 rounded-lg shadow-2xl">
+        <h1 className="text-6xl font-black text-white text-center animate-pulse">
+          ✅ PRUEBA QUE ESTOY VINCULADO AL VS CODE ✅
+        </h1>
+        <p className="text-2xl text-white text-center mt-4 font-semibold">
+          Si ves este mensaje, el deploy funcionó correctamente 🚀
+        </p>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
           <Card>
