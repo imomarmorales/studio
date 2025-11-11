@@ -3,7 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -13,39 +16,105 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Temporarily simplified - check if email is admin email
-      // This allows immediate access without requiring user document lookup
-      return request.auth.token.email == 'admin@congreso.mx' || 
-             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      // Check if user is admin by email OR by role in Firestore
+      // This allows both methods to work seamlessly
+      return isSignedIn() && (
+        request.auth.token.email == 'admin@congreso.mx' || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
     }
 
-    // Rules for 'users' collection
+    // ============================================
+    // USERS COLLECTION
+    // Stores user profiles, points, roles, credentials
+    // ============================================
     match /users/{userId} {
-      allow create: if isSignedIn(); // Allow any signed-in user to create their own profile
-      allow get: if isSignedIn(); // Allow any signed-in user to read any profile
-      allow list: if isSignedIn(); // Temporarily allow all signed-in users to list (for testing)
+      // Anyone can create their own profile (registration)
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      
+      // Anyone signed in can read any user profile
+      // (Needed for leaderboards, participant lists, etc.)
+      allow get: if isSignedIn();
+      
+      // List all users - admins can see everyone, users can see everyone for rankings
+      allow list: if isSignedIn();
+      
+      // Update - users can update their own profile, admins can update anyone
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow delete: if isSignedIn() && isAdmin();
+      
+      // Delete - only admins can delete users
+      allow delete: if isAdmin();
+      
+      // ============================================
+      // ATTENDANCE SUBCOLLECTION
+      // Tracks which events each user attended
+      // ============================================
+      match /attendance/{attendanceId} {
+        // Users can read their own attendance, admins can read anyone's
+        allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+        
+        // Users can list their own attendance, admins can list anyone's
+        allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+        
+        // Users can create their own attendance records (scan QR)
+        // Admins can create attendance for anyone (manual registration)
+        allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+        
+        // Only admins can update or delete attendance records
+        allow update, delete: if isAdmin();
+      }
     }
     
-    // Rules for 'events' collection
+    // ============================================
+    // EVENTS COLLECTION
+    // Stores congress events with details, QR codes, images
+    // ============================================
     match /events/{eventId} {
-      allow read: if isSignedIn(); // Any signed-in user can see the events
-      allow list: if isSignedIn(); // Any signed-in user can list events (simplified)
-      allow create, update, delete: if isSignedIn() && isAdmin(); // Only admins can manage events
+      // Anyone signed in can read individual events
+      allow get: if isSignedIn();
+      
+      // Anyone signed in can list all events (for agenda, schedule)
+      allow list: if isSignedIn();
+      
+      // Only admins can create, update, or delete events
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Rules for 'attendance' subcollection
-    match /users/{userId}/attendance/{attendanceId} {
-      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
-      // A user can only create an attendance record for themselves
-      allow create: if isSignedIn() && isOwner(userId);
+    // ============================================
+    // FUTURE COLLECTIONS (Add as needed)
+    // ============================================
+    
+    // Announcements/News collection
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Speakers/Presenters collection
+    match /speakers/{speakerId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Challenges/Contests collection
+    match /challenges/{challengeId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Sponsors collection
+    match /sponsors/{sponsorId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-
-    // Default deny all other collections/paths
+    // ============================================
+    // DEFAULT DENY ALL
+    // Any collection not explicitly defined above is blocked
+    // ============================================
     match /{document=**} {
       allow read, write: if false;
     }
