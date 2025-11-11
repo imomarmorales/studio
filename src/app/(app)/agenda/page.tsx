@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCollection, useFirebase, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
