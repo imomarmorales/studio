@@ -1,10 +1,13 @@
 'use client';
 import { getAuth, type User } from 'firebase/auth';
+import { DocumentData } from 'firebase/firestore';
+
+type FirebaseOperation = 'get' | 'list' | 'create' | 'update' | 'delete' | 'write';
 
 type SecurityRuleContext = {
   path: string;
-  operation: 'get' | 'list' | 'create' | 'update' | 'delete' | 'write';
-  requestResourceData?: any;
+  operation: FirebaseOperation;
+  requestResourceData?: DocumentData;
 };
 
 interface FirebaseAuthToken {
@@ -30,7 +33,7 @@ interface SecurityRuleRequest {
   method: string;
   path: string;
   resource?: {
-    data: any;
+    data: DocumentData;
   };
 }
 

@@ -25,16 +25,21 @@ function initializeFirebase(): {
   // NOTE: Emulator connection should only be used in development.
   if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
     const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
-    // Before connecting, check if the emulator is already connected.
-    if (!auth.config.emulator) {
-      // Point the Auth emulator to the local IP address.
+    
+    // Connect Auth emulator
+    try {
       connectAuthEmulator(auth, `http://${host}:9099`, {
         disableWarnings: true,
       });
+    } catch (error) {
+      // Emulator already connected, ignore error
     }
 
-    if (!(firestore as any)._settings.host) {
+    // Connect Firestore emulator
+    try {
       connectFirestoreEmulator(firestore, host, 8080);
+    } catch (error) {
+      // Emulator already connected, ignore error
     }
   }
 
@@ -43,12 +48,15 @@ function initializeFirebase(): {
 
 // Custom hook to memoize Firebase references and queries.
 function useMemoFirebase<T>(factory: () => T | null, deps: React.DependencyList): T | null {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoizedValue = useMemo(factory, deps);
   
   // Mark the object as memoized to satisfy useCollection's validation
   if (memoizedValue && typeof memoizedValue === 'object') {
-    (memoizedValue as any).__memo = true;
+    Object.defineProperty(memoizedValue, '__memo', {
+      value: true,
+      enumerable: false,
+      writable: false,
+    });
   }
   
   return memoizedValue;
