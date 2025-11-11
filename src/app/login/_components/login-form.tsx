@@ -23,7 +23,7 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 
 const formSchema = z.object({
@@ -88,6 +88,20 @@ export function LoginForm() {
             return;
         }
         
+        // Verificar si ya existe un usuario con este email en Firestore
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('email', '==', values.email));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          toast({
+            variant: 'destructive',
+            title: 'Email ya registrado',
+            description: 'Ya existe una cuenta con este correo. Este usuario ya tiene cuenta registrada.',
+          });
+          return;
+        }
+        
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           values.email,
@@ -110,7 +124,8 @@ export function LoginForm() {
           points: 0,
           role: isAdmin ? 'admin' : 'alumno',
           digitalCredentialQR: user.uid,
-          photoURL: `https://picsum.photos/seed/${user.uid}/200`
+          photoURL: `https://picsum.photos/seed/${user.uid}/200`,
+          createdAt: new Date()
         });
 
         toast({

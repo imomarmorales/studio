@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Importar tokens de diseño */
+@import '../styles/design-tokens.css';
+
 @layer base {
   :root {
     --background: 0 0% 100%;
