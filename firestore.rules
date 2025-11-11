@@ -13,14 +13,18 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Temporarily simplified - check if email is admin email
+      // This allows immediate access without requiring user document lookup
+      return request.auth.token.email == 'admin@congreso.mx' || 
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     // Rules for 'users' collection
     match /users/{userId} {
       allow create: if isSignedIn(); // Allow any signed-in user to create their own profile
       allow get: if isSignedIn(); // Allow any signed-in user to read any profile
-      allow list: if isSignedIn() && isAdmin(); // ONLY admins can list all users
+      allow list: if isSignedIn(); // Temporarily allow all signed-in users to list (for testing)
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && isAdmin();
     }
@@ -28,7 +32,7 @@ service cloud.firestore {
     // Rules for 'events' collection
     match /events/{eventId} {
       allow read: if isSignedIn(); // Any signed-in user can see the events
-      allow list: if isSignedIn(); // Any signed-in user can list events
+      allow list: if isSignedIn(); // Any signed-in user can list events (simplified)
       allow create, update, delete: if isSignedIn() && isAdmin(); // Only admins can manage events
     }
 
