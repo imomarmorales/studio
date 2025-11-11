@@ -1,14 +1,45 @@
-# Semana de la Ingeniería 2025
+# Semana de la Ingeniería 2025 - Sistema de Gestión de Eventos
 
-Aplicación web para el congreso académico de la Facultad de Ingeniería Tampico de la UAT.
+Aplicación web completa para el congreso académico de la Facultad de Ingeniería Tampico de la UAT.
 
-## 🚀 Tecnologías
+## 🎯 Características Principales
 
-- **Framework**: Next.js 15.3.3 (React 18)
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Backend**: Firebase (Authentication + Firestore)
-- **TypeScript**: Para type-safety completo
-- **Form Management**: React Hook Form + Zod
+### Para Participantes
+- 📱 **Marcar Asistencia con QR**: Escanea códigos QR durante los eventos para acumular puntos
+- 🏆 **Ranking en Tiempo Real**: Compite con otros participantes y sube en el leaderboard
+- 👤 **Perfil Personalizado**: Sube tu foto, edita tu información y ve tu historial
+- 📅 **Agenda Interactiva**: Visualiza eventos próximos y eventos en curso destacados
+- 🔔 **Notificaciones**: Recibe alertas 15 minutos antes y cuando los eventos inicien
+
+### Para Administradores
+- ➕ **Crear Eventos**: Formulario completo con validación (título, fecha, ubicación, ponentes, puntos)
+- ✏️ **Editar Eventos**: Modifica cualquier aspecto del evento después de crearlo
+- 🔄 **Gestión de QR**: Regenera, invalida o reactiva códigos QR en cualquier momento
+- � **Ver Asistentes**: Lista completa de participantes con detalles y timestamps
+- 📥 **Exportar CSV**: Descarga datos de asistencia en formato Excel-compatible
+- 🗑️ **Eliminar Eventos**: Con confirmación de seguridad
+
+## 💡 Cómo Funciona el Sistema de Puntos
+
+1. **Asistir a Eventos**: Cada evento tiene un valor de puntos (por defecto 100 pts)
+2. **Escanear QR**: Durante el evento, escanea el código QR para marcar tu asistencia
+3. **Ganar Puntos**: Los puntos se acreditan instantáneamente a tu perfil
+4. **Subir en el Ranking**: Mientras más eventos asistas, mejor será tu posición
+
+### Reglas de Asistencia
+- ✅ Solo puedes marcar asistencia **15 minutos antes** del inicio y hasta el **final del evento**
+- ✅ Cada QR es **único y permanente** por evento
+- ✅ No puedes marcar asistencia **dos veces** al mismo evento
+- ✅ Los puntos se otorgan **automáticamente** al escanear
+
+## �🚀 Tecnologías
+
+- **Framework**: Next.js 15.3.3 (React 19 RC, App Router)
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Backend**: Firebase (Authentication + Firestore + Storage)
+- **TypeScript**: Type-safety completo con modo strict
+- **Form Management**: React Hook Form + Zod validation
+- **QR Scanner**: jsqr library con acceso a cámara
 - **AI**: Genkit (Google Generative AI)
 
 ## 📋 Requisitos Previos
