@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 // Define the shape of the context data.
@@ -11,6 +12,7 @@ export interface FirebaseContextValue {
   firebaseApp: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
+  storage: FirebaseStorage | null;
 }
 
 // Create a context for the Firebase instances.
@@ -36,7 +38,7 @@ export function FirebaseProvider({
 // Custom hooks to easily access Firebase instances.
 
 /**
- * Returns the full Firebase context value: { firebaseApp, auth, firestore }.
+ * Returns the full Firebase context value: { firebaseApp, auth, firestore, storage }.
  * Throws an error if used outside of a FirebaseProvider.
  */
 export function useFirebase(): FirebaseContextValue {
@@ -69,4 +71,12 @@ export function useAuth(): Auth | null {
  */
 export function useFirestore(): Firestore | null {
   return useFirebase().firestore;
+}
+
+/**
+ * Returns the Storage instance.
+ * Throws an error if used outside of a FirebaseProvider.
+ */
+export function useStorage(): FirebaseStorage | null {
+  return useFirebase().storage;
 }

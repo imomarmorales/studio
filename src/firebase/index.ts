@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { Auth, getAuth, connectAuthEmulator } from 'firebase/auth';
 import { Firestore, getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { FirebaseStorage, getStorage, connectStorageEmulator } from 'firebase/storage';
 import { firebaseConfig } from './config';
 import { FirebaseProvider, useAuth, useFirebase, useFirebaseApp, useFirestore } from './provider';
 import { FirebaseClientProvider } from './client-provider';
@@ -16,11 +17,13 @@ function initializeFirebase(): {
   firebaseApp: FirebaseApp;
   auth: Auth;
   firestore: Firestore;
+  storage: FirebaseStorage;
 } {
   const isConfigured = getApps().length > 0;
   const firebaseApp = isConfigured ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
+  const storage = getStorage(firebaseApp);
 
   // NOTE: Emulator connection should only be used in development.
   if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
@@ -41,9 +44,16 @@ function initializeFirebase(): {
     } catch (error) {
       // Emulator already connected, ignore error
     }
+
+    // Connect Storage emulator
+    try {
+      connectStorageEmulator(storage, host, 9199);
+    } catch (error) {
+      // Emulator already connected, ignore error
+    }
   }
 
-  return { firebaseApp, auth, firestore };
+  return { firebaseApp, auth, firestore, storage };
 }
 
 // Custom hook to memoize Firebase references and queries.

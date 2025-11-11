@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile photos - users can only upload/read their own
+    match /profile_photos/{userId}/{allPaths=**} {
+      allow read: if true; // Anyone can read profile photos
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Event images - only admins can upload
+    match /event_images/{allPaths=**} {
+      allow read: if true; // Anyone can read event images
+      allow write: if request.auth != null && 
+                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
