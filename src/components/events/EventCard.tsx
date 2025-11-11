@@ -1,118 +1,148 @@
 'use client';
 
 import { CongressEvent } from '@/lib/types';
-import { 
-  getEventStatus, 
-  formatEventDateTime, 
-  getEventStatusLabel 
-} from '@/lib/event-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Trophy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, MapPin, Trophy, Clock } from 'lucide-react';
 import Image from 'next/image';
+import { getEventStatus, formatEventDateTime, formatEventTime, getTimeUntilEvent } from '@/lib/event-utils';
 import { cn } from '@/lib/utils';
 
 interface EventCardProps {
   event: CongressEvent;
-  onClick?: () => void;
-  className?: string;
+  onViewDetails: (event: CongressEvent) => void;
+  onMarkAttendance?: (event: CongressEvent) => void;
+  showAttendanceButton?: boolean;
 }
 
-export function EventCard({ event, onClick, className }: EventCardProps) {
+export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendanceButton = true }: EventCardProps) {
   const status = getEventStatus(event);
-  const isLive = status === 'live';
-  const isPast = status === 'past';
+  
+  const statusConfig = {
+    'upcoming': {
+      label: 'Próximo',
+      variant: 'secondary' as const,
+      className: 'border-border bg-background',
+      badgeClassName: 'bg-blue-100 text-blue-800 border-blue-200',
+    },
+    'in-progress': {
+      label: 'En Curso',
+      variant: 'destructive' as const,
+      className: 'border-red-500 bg-red-50 shadow-lg shadow-red-100 animate-pulse-subtle',
+      badgeClassName: 'bg-red-600 text-white animate-pulse',
+    },
+    'finished': {
+      label: 'Finalizado',
+      variant: 'outline' as const,
+      className: 'border-border bg-muted opacity-75',
+      badgeClassName: 'bg-gray-100 text-gray-600',
+    },
+  };
+
+  const config = statusConfig[status];
 
   return (
-    <Card
+    <Card 
       className={cn(
-        'group cursor-pointer transition-all duration-200 hover:shadow-lg',
-        'relative overflow-hidden',
-        // Estados visuales
-        isLive && 'event-live-border event-live-gradient',
-        isPast && 'opacity-60',
-        className
+        "overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer",
+        config.className
       )}
-      onClick={onClick}
+      onClick={() => onViewDetails(event)}
     >
-      {/* Badge de Estado - Esquina superior derecha */}
-      <div className="absolute top-2 right-2 z-10">
-        <Badge 
-          className={cn(
-            'font-semibold shadow-md',
-            isLive && 'event-live-badge',
-            status === 'upcoming' && 'bg-blue-500 hover:bg-blue-600',
-            isPast && 'bg-gray-400'
-          )}
-        >
-          {getEventStatusLabel(status)}
-        </Badge>
-      </div>
-
-      {/* Imagen del Evento */}
-      <div className="relative w-full aspect-video overflow-hidden bg-muted">
-        {event.imageUrl ? (
+      <div className="relative aspect-video w-full">
+        {event.imageUrl && (
           <Image
             src={event.imageUrl}
             alt={event.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className={cn(
+              "object-cover",
+              status === 'finished' && 'grayscale'
+            )}
           />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <Calendar className="h-16 w-16 text-primary/40" />
+        )}
+        <div className="absolute top-3 right-3">
+          <Badge className={cn("font-semibold", config.badgeClassName)}>
+            {config.label}
+          </Badge>
+        </div>
+        {status === 'in-progress' && (
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-white text-red-600 border-red-500 animate-bounce">
+              🔴 AHORA
+            </Badge>
           </div>
         )}
       </div>
-
-      {/* Contenido */}
+      
       <CardContent className="p-4 space-y-3">
-        {/* Título */}
-        <h3 className={cn(
-          'font-semibold text-lg leading-tight line-clamp-2',
-          isLive && 'text-primary'
-        )}>
-          {event.title}
-        </h3>
+        <div>
+          <h3 className="font-bold text-lg line-clamp-2">{event.title}</h3>
+          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+            {event.description}
+          </p>
+        </div>
 
-        {/* Metadata Grid */}
-        <div className="space-y-2 text-sm text-muted-foreground">
-          {/* Fecha y Hora */}
-          <div className="flex items-center gap-2">
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4 flex-shrink-0" />
             <span className="truncate">{formatEventDateTime(event.dateTime)}</span>
           </div>
-
-          {/* Ubicación */}
-          <div className="flex items-center gap-2">
+          
+          {status === 'upcoming' && (
+            <div className="flex items-center gap-2 text-blue-600 font-medium">
+              <Clock className="h-4 w-4 flex-shrink-0" />
+              <span>{getTimeUntilEvent(event.dateTime)}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="h-4 w-4 flex-shrink-0" />
             <span className="truncate">{event.location}</span>
           </div>
-
-          {/* Puntos */}
-          <div className="flex items-center gap-2">
+          
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Trophy className="h-4 w-4 flex-shrink-0 text-yellow-500" />
-            <span className="font-semibold text-foreground">
-              {event.points || 100} pts
-            </span>
+            <span className="font-semibold">{event.pointsPerAttendance || 100} puntos</span>
           </div>
         </div>
 
-        {/* Categoría (opcional) */}
-        {event.category && (
-          <div className="pt-2 border-t">
-            <span className="text-xs text-muted-foreground">
-              {event.category}
-            </span>
-          </div>
+        {showAttendanceButton && status === 'in-progress' && onMarkAttendance && (
+          <Button 
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkAttendance(event);
+            }}
+          >
+            Marcar Asistencia
+          </Button>
+        )}
+        
+        {status === 'upcoming' && (
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails(event);
+            }}
+          >
+            Ver Detalles
+          </Button>
+        )}
+        
+        {status === 'finished' && (
+          <Button 
+            variant="ghost" 
+            className="w-full text-muted-foreground cursor-default"
+            disabled
+          >
+            Evento Finalizado
+          </Button>
         )}
       </CardContent>
-
-      {/* Indicador de estado "En Vivo" adicional (barra inferior) */}
-      {isLive && (
-        <div className="h-1 w-full bg-gradient-to-r from-transparent via-event-live to-transparent" />
-      )}
     </Card>
   );
 }

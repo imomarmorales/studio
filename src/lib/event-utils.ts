@@ -1,226 +1,112 @@
-/**
- * Utilidades para manejo de eventos
- * Detección de estado, validaciones y helpers
- */
-
-import { CongressEvent, EventStatus } from './types';
-import { addHours, isAfter, isBefore, isWithinInterval } from 'date-fns';
+import type { CongressEvent, EventStatus } from './types';
 
 /**
- * Determina el estado actual de un evento basado en su fecha/hora
- * 
- * Lógica de negocio:
- * - 'live': El evento está EN CURSO (entre dateTime y endDateTime)
- * - 'upcoming': El evento aún no ha comenzado
- * - 'past': El evento ya terminó
- * 
- * @param event - Evento a evaluar
- * @returns Estado del evento
+ * Genera un token aleatorio seguro para QR
+ * @param length Longitud del token (default 12)
  */
-export function getEventStatus(event: CongressEvent): EventStatus {
-  const now = new Date();
-  const startDate = new Date(event.dateTime);
-  
-  // Si tiene endDateTime, usarlo; sino, asumir duración de 2 horas
-  const endDate = event.endDateTime 
-    ? new Date(event.endDateTime) 
-    : addHours(startDate, 2);
-
-  // Verificar si está en curso
-  if (isWithinInterval(now, { start: startDate, end: endDate })) {
-    return 'live';
+export function generateQRToken(length: number = 12): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
+  return result;
+}
 
-  // Verificar si está por venir
-  if (isBefore(now, startDate)) {
+/**
+ * Codifica el QR data para un evento
+ * Formato: {eventId}|{qrToken}
+ */
+export function encodeEventQR(eventId: string, qrToken: string): string {
+  return `${eventId}|${qrToken}`;
+}
+
+/**
+ * Decodifica el QR data
+ * @returns {eventId, qrToken} o null si inválido
+ */
+export function decodeEventQR(qrData: string): { eventId: string; qrToken: string } | null {
+  const parts = qrData.split('|');
+  if (parts.length !== 2) return null;
+  return { eventId: parts[0], qrToken: parts[1] };
+}
+
+/**
+ * Determina el estado de un evento basado en fecha/hora actual
+ */
+export function getEventStatus(event: CongressEvent, now: Date = new Date()): EventStatus {
+  const startTime = new Date(event.dateTime);
+  const endTime = event.endDateTime 
+    ? new Date(event.endDateTime) 
+    : new Date(startTime.getTime() + 4 * 60 * 60 * 1000); // Default +4 horas
+
+  if (now < startTime) {
     return 'upcoming';
+  } else if (now >= startTime && now <= endTime) {
+    return 'in-progress';
+  } else {
+    return 'finished';
   }
-
-  // Ya pasó
-  return 'past';
 }
 
 /**
- * Valida si un evento permite marcar asistencia
- * 
- * Reglas:
- * - Solo eventos EN CURSO permiten asistencia
- * - Se puede extender con ventana de tolerancia (±15 min) si es necesario
- * 
- * @param event - Evento a validar
- * @param toleranceMinutes - Minutos de tolerancia antes/después (opcional)
- * @returns true si se puede marcar asistencia
+ * Verifica si un evento puede recibir asistencias
+ * Permite un grace period de 15 minutos después del inicio
  */
-export function canMarkAttendance(event: CongressEvent, toleranceMinutes: number = 0): boolean {
-  const now = new Date();
-  const startDate = new Date(event.dateTime);
-  const endDate = event.endDateTime 
+export function canMarkAttendance(event: CongressEvent, now: Date = new Date()): boolean {
+  const startTime = new Date(event.dateTime);
+  const gracePeriod = 15 * 60 * 1000; // 15 minutos en ms
+  const endTime = event.endDateTime 
     ? new Date(event.endDateTime) 
-    : addHours(startDate, 2);
+    : new Date(startTime.getTime() + 4 * 60 * 60 * 1000);
 
-  // Si hay tolerancia, ajustar ventana
-  const windowStart = toleranceMinutes > 0 
-    ? addHours(startDate, -toleranceMinutes / 60) 
-    : startDate;
-  const windowEnd = toleranceMinutes > 0 
-    ? addHours(endDate, toleranceMinutes / 60) 
-    : endDate;
+  const allowedStart = new Date(startTime.getTime() - gracePeriod);
+  const allowedEnd = endTime;
 
-  return isWithinInterval(now, { start: windowStart, end: windowEnd });
+  return now >= allowedStart && now <= allowedEnd;
 }
 
 /**
- * Formatea la fecha/hora del evento para mostrar
- * 
- * @param dateTimeString - String ISO 8601
- * @returns Formato legible: "Lun 15 Nov • 10:00 AM"
+ * Formatea la fecha y hora de un evento
  */
-export function formatEventDateTime(dateTimeString: string): string {
-  const date = new Date(dateTimeString);
-  
-  const dayOfWeek = date.toLocaleDateString('es-MX', { weekday: 'short' });
-  const day = date.getDate();
-  const month = date.toLocaleDateString('es-MX', { month: 'short' });
-  const time = date.toLocaleTimeString('es-MX', { 
-    hour: '2-digit', 
+export function formatEventDateTime(dateTime: string): string {
+  const date = new Date(dateTime);
+  return new Intl.DateTimeFormat('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
-    hour12: true 
-  });
-
-  return `${dayOfWeek} ${day} ${month} • ${time}`;
+  }).format(date);
 }
 
 /**
- * Formatea la duración del evento
- * 
- * @param startDateTime - Inicio
- * @param endDateTime - Fin (opcional)
- * @returns Duración en formato legible: "2 horas" o "10:00 AM - 12:00 PM"
+ * Formatea solo la hora
  */
-export function formatEventDuration(startDateTime: string, endDateTime?: string): string {
-  const start = new Date(startDateTime);
-  const end = endDateTime ? new Date(endDateTime) : addHours(start, 2);
-
-  const startTime = start.toLocaleTimeString('es-MX', { 
-    hour: '2-digit', 
+export function formatEventTime(dateTime: string): string {
+  const date = new Date(dateTime);
+  return new Intl.DateTimeFormat('es-MX', {
+    hour: '2-digit',
     minute: '2-digit',
-    hour12: true 
-  });
-  const endTime = end.toLocaleTimeString('es-MX', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true 
-  });
-
-  return `${startTime} - ${endTime}`;
+  }).format(date);
 }
 
 /**
- * Obtiene el color CSS para el estado del evento
- * 
- * @param status - Estado del evento
- * @returns Variable CSS para el color
+ * Calcula el tiempo hasta el inicio del evento
  */
-export function getEventStatusColor(status: EventStatus): string {
-  switch (status) {
-    case 'live':
-      return 'hsl(var(--event-live))';
-    case 'upcoming':
-      return 'hsl(var(--event-upcoming))';
-    case 'past':
-      return 'hsl(var(--event-past))';
-  }
-}
-
-/**
- * Obtiene el label para el estado del evento
- * 
- * @param status - Estado del evento
- * @returns Texto a mostrar en el badge
- */
-export function getEventStatusLabel(status: EventStatus): string {
-  switch (status) {
-    case 'live':
-      return '🔴 EN VIVO';
-    case 'upcoming':
-      return 'PRÓXIMO';
-    case 'past':
-      return 'FINALIZADO';
-  }
-}
-
-/**
- * Ordena eventos priorizando:
- * 1. Eventos EN VIVO primero
- * 2. Eventos próximos por fecha ascendente
- * 3. Eventos pasados por fecha descendente
- * 
- * @param events - Array de eventos
- * @returns Array ordenado
- */
-export function sortEventsByStatus(events: CongressEvent[]): CongressEvent[] {
-  return [...events].sort((a, b) => {
-    const statusA = getEventStatus(a);
-    const statusB = getEventStatus(b);
-
-    // Prioridad 1: Eventos EN VIVO primero
-    if (statusA === 'live' && statusB !== 'live') return -1;
-    if (statusB === 'live' && statusA !== 'live') return 1;
-
-    // Prioridad 2: Eventos próximos antes que pasados
-    if (statusA === 'upcoming' && statusB === 'past') return -1;
-    if (statusB === 'upcoming' && statusA === 'past') return 1;
-
-    // Dentro del mismo estado, ordenar por fecha
-    const dateA = new Date(a.dateTime).getTime();
-    const dateB = new Date(b.dateTime).getTime();
-
-    if (statusA === 'upcoming') {
-      // Próximos: más cercanos primero (ascendente)
-      return dateA - dateB;
-    } else {
-      // Pasados: más recientes primero (descendente)
-      return dateB - dateA;
-    }
-  });
-}
-
-/**
- * Filtra eventos por estado
- * 
- * @param events - Array de eventos
- * @param status - Estado a filtrar (o 'all')
- * @returns Eventos filtrados
- */
-export function filterEventsByStatus(
-  events: CongressEvent[], 
-  status: EventStatus | 'all'
-): CongressEvent[] {
-  if (status === 'all') return events;
-  return events.filter(event => getEventStatus(event) === status);
-}
-
-/**
- * Calcula cuántos minutos faltan para que inicie un evento
- * 
- * @param event - Evento a evaluar
- * @returns Minutos restantes (negativo si ya pasó o está en curso)
- */
-export function getMinutesUntilStart(event: CongressEvent): number {
+export function getTimeUntilEvent(dateTime: string): string {
   const now = new Date();
-  const startDate = new Date(event.dateTime);
-  const diffMs = startDate.getTime() - now.getTime();
-  return Math.floor(diffMs / 1000 / 60);
-}
+  const eventDate = new Date(dateTime);
+  const diff = eventDate.getTime() - now.getTime();
 
-/**
- * Determina si se debe mostrar recordatorio para un evento
- * 
- * @param event - Evento a evaluar
- * @param reminderMinutes - Minutos de anticipación para el recordatorio
- * @returns true si se debe mostrar recordatorio
- */
-export function shouldShowReminder(event: CongressEvent, reminderMinutes: number = 30): boolean {
-  const minutesUntilStart = getMinutesUntilStart(event);
-  return minutesUntilStart > 0 && minutesUntilStart <= reminderMinutes;
+  if (diff < 0) return 'Evento iniciado';
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (days > 0) return `En ${days}d ${hours}h`;
+  if (hours > 0) return `En ${hours}h ${minutes}m`;
+  return `En ${minutes}m`;
 }

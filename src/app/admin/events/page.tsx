@@ -5,6 +5,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import { generateQRToken } from '@/lib/event-utils';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,15 +39,76 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
-  dateTime: z.date({ required_error: 'La fecha y hora son requeridas.' }),
+  dateTime: z.date({ required_error: 'La fecha y hora de inicio son requeridas.' }),
+  endDateTime: z.date().optional(),
   location: z.string().min(3, 'La ubicación es requerida.'),
+  pointsPerAttendance: z.number().min(1, 'Los puntos deben ser al menos 1.').default(100),
+  speakers: z.string().optional(),
+  duration: z.string().optional(),
+  attendanceRules: z.string().optional(),
+}).refine((data) => {
+  if (data.endDateTime && data.dateTime) {
+    return data.endDateTime > data.dateTime;
+  }
+  return true;
+}, {
+  message: 'La fecha de fin debe ser posterior a la fecha de inicio',
+  path: ['endDateTime'],
 });
 
 type EventFormValues = z.infer<typeof formSchema>;
 
 function EventQrDialog({ event, isOpen, onOpenChange }: { event: CongressEvent | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
     if (!event) return null;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(event.id)}`;
+    const qrData = `${event.id}|${event.qrToken}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}`;
+
+    const handleDownloadQR = () => {
+        const link = document.createElement('a');
+        link.href = qrCodeUrl;
+        link.download = `QR-${event.title.replace(/\s+/g, '-')}-${event.id}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handlePrintQR = () => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>QR - ${event.title}</title>
+                        <style>
+                            body { 
+                                display: flex; 
+                                flex-direction: column; 
+                                align-items: center; 
+                                justify-content: center; 
+                                height: 100vh; 
+                                margin: 0; 
+                                font-family: Arial, sans-serif;
+                            }
+                            h1 { margin: 20px 0; }
+                            img { border: 4px solid #000; padding: 20px; }
+                            .info { margin-top: 20px; text-align: center; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${event.title}</h1>
+                        <img src="${qrCodeUrl}" alt="Código QR" />
+                        <div class="info">
+                            <p><strong>Fecha:</strong> ${new Date(event.dateTime).toLocaleDateString('es-MX')}</p>
+                            <p><strong>Lugar:</strong> ${event.location}</p>
+                            <p><strong>Puntos:</strong> ${event.pointsPerAttendance}</p>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -54,19 +116,38 @@ function EventQrDialog({ event, isOpen, onOpenChange }: { event: CongressEvent |
                 <DialogHeader>
                     <DialogTitle>Código QR para: {event.title}</DialogTitle>
                     <DialogDescription>
-                        Muestra este código a los asistentes para que puedan registrar su asistencia. Puedes tomar una captura de pantalla o imprimirlo.
+                        QR permanente para registro de asistencia. Puedes descargarlo o imprimirlo.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex items-center justify-center p-4">
-                    <Image
-                        src={qrCodeUrl}
-                        alt={`Código QR para ${event.title}`}
-                        width={300}
-                        height={300}
-                        className="rounded-lg border shadow-md"
-                    />
+                <div className="flex flex-col items-center gap-4 p-4">
+                    <div className="border-4 border-primary p-4 rounded-lg bg-white">
+                        <Image
+                            src={qrCodeUrl}
+                            alt={`Código QR para ${event.title}`}
+                            width={300}
+                            height={300}
+                            className="rounded-lg"
+                        />
+                    </div>
+                    <div className="text-sm text-muted-foreground text-center">
+                        <p><strong>ID del Evento:</strong> {event.id}</p>
+                        <p><strong>Token:</strong> {event.qrToken}</p>
+                        <p className={cn("font-semibold", event.qrValid ? "text-green-600" : "text-destructive")}>
+                            Estado: {event.qrValid ? "✓ Válido" : "✗ Invalidado"}
+                        </p>
+                    </div>
+                    <div className="flex gap-2 w-full">
+                        <Button onClick={handleDownloadQR} className="flex-1">
+                            Descargar PNG
+                        </Button>
+                        <Button onClick={handlePrintQR} variant="outline" className="flex-1">
+                            Imprimir
+                        </Button>
+                    </div>
+                    <Button onClick={() => onOpenChange(false)} variant="secondary" className="w-full">
+                        Cerrar
+                    </Button>
                 </div>
-                 <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
             </DialogContent>
         </Dialog>
     );
@@ -125,6 +206,10 @@ function ManageEventsContent() {
       title: '',
       description: '',
       location: '',
+      pointsPerAttendance: 100,
+      speakers: '',
+      duration: '',
+      attendanceRules: '',
     },
   });
 
@@ -139,12 +224,22 @@ function ManageEventsContent() {
     setIsSubmitting(true);
 
     try {
+      const qrToken = generateQRToken(12);
+      const speakers = data.speakers ? data.speakers.split(',').map(s => s.trim()).filter(Boolean) : [];
+      
       const newEvent: Omit<CongressEvent, 'id'> = {
         title: data.title,
         description: data.description,
         dateTime: data.dateTime.toISOString(),
+        endDateTime: data.endDateTime?.toISOString(),
         location: data.location,
-        imageUrl: `https://picsum.photos/seed/${uuidv4()}/600/400`
+        imageUrl: `https://picsum.photos/seed/${uuidv4()}/600/400`,
+        pointsPerAttendance: data.pointsPerAttendance || 100,
+        qrToken: qrToken,
+        qrValid: true,
+        speakers: speakers.length > 0 ? speakers : undefined,
+        duration: data.duration || undefined,
+        attendanceRules: data.attendanceRules || undefined,
       };
       
       await addDoc(collection(firestore, 'events'), newEvent);
@@ -229,7 +324,7 @@ function ManageEventsContent() {
                             name="dateTime"
                             render={({ field }) => (
                             <FormItem className="flex flex-col">
-                                <FormLabel>Fecha y Hora</FormLabel>
+                                <FormLabel>Fecha y Hora de Inicio</FormLabel>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <FormControl>
@@ -241,9 +336,9 @@ function ManageEventsContent() {
                                             )}
                                         >
                                             {field.value ? (
-                                            format(field.value, "PPP")
+                                            format(field.value, "PPP HH:mm")
                                             ) : (
-                                            <span>Elige una fecha</span>
+                                            <span>Elige fecha y hora</span>
                                             )}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
@@ -259,6 +354,102 @@ function ManageEventsContent() {
                                         />
                                     </PopoverContent>
                                 </Popover>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="endDateTime"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Fecha y Hora de Fin (Opcional)</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value ? (
+                                            format(field.value, "PPP HH:mm")
+                                            ) : (
+                                            <span>Elige fecha y hora de fin</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) => date < new Date("1900-01-01")}
+                                        initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="pointsPerAttendance"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Puntos por Asistencia</FormLabel>
+                                <FormControl>
+                                <Input 
+                                    type="number" 
+                                    placeholder="100" 
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 100)}
+                                />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="speakers"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Ponentes (separados por comas)</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Dr. Juan Pérez, Ing. Ana López" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="duration"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Duración (Opcional)</FormLabel>
+                                <FormControl>
+                                <Input placeholder="2 horas" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="attendanceRules"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Reglas de Asistencia (Opcional)</FormLabel>
+                                <FormControl>
+                                <Textarea placeholder="Reglas especiales para este evento..." {...field} />
+                                </FormControl>
                                 <FormMessage />
                             </FormItem>
                             )}

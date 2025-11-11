@@ -99,7 +99,10 @@ export default function ManageEventsPage() {
         description: data.description,
         dateTime: data.dateTime.toISOString(),
         location: data.location,
-        imageUrl: `https://picsum.photos/seed/${uuidv4()}/600/400`
+        imageUrl: `https://picsum.photos/seed/${uuidv4()}/600/400`,
+        pointsPerAttendance: 100,
+        qrToken: 'TEMP',
+        qrValid: true,
       };
       
       await addDoc(collection(firestore, 'events'), newEvent);

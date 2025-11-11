@@ -81,6 +81,21 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+      
+      // ============================================
+      // ATTENDEES SUBCOLLECTION (mirror for admin queries)
+      // Tracks who attended each event
+      // ============================================
+      match /attendees/{attendeeId} {
+        // Admins can read all attendees for an event
+        allow get, list: if isAdmin();
+        
+        // Users can create their own attendance when scanning QR
+        allow create: if isSignedIn() && request.auth.uid == attendeeId;
+        
+        // Only admins can delete attendance records
+        allow delete: if isAdmin();
+      }
     }
 
     // ============================================
