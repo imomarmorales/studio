@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Camera } from 'lucide-react';
+import { Camera, CheckCircle2 } from 'lucide-react';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -23,6 +23,8 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState(false);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -34,6 +36,7 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         setHasCameraPermission(true);
+        setIsScanning(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play();
@@ -66,7 +69,32 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
                 });
 
                 if (code) {
-                    onScanSuccess(code.data);
+                    // Visual feedback
+                    setScanSuccess(true);
+                    setIsScanning(false);
+                    
+                    // Play success sound (beep)
+                    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = 800; // Higher frequency for success
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    
+                    // Delay before calling success callback
+                    setTimeout(() => {
+                      onScanSuccess(code.data);
+                      onOpenChange(false);
+                    }, 500);
                     return; // Stop scanning after success
                 }
             }
@@ -87,6 +115,8 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
       if(animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
+      setIsScanning(false);
+      setScanSuccess(false);
     };
   }, [isOpen, onScanSuccess, onOpenChange, toast]);
 
@@ -101,6 +131,16 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
         </DialogHeader>
         <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
             <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+            
+            {/* Success Overlay */}
+            {scanSuccess && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500/80 text-white animate-in fade-in duration-300">
+                    <CheckCircle2 className="h-16 w-16 mb-2 animate-pulse" />
+                    <h3 className="text-xl font-bold">¡Código QR Detectado!</h3>
+                </div>
+            )}
+            
+            {/* Camera Permission Error */}
             {hasCameraPermission === false && (
                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white p-4">
                     <Camera className="h-12 w-12 mb-4" />
@@ -108,10 +148,29 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
                     <p className="text-center text-sm">Por favor, permite el acceso a la cámara para escanear el código QR.</p>
                  </div>
             )}
-            {/* QR Code Finder Overlay */}
-             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-64 h-64 border-4 border-dashed border-primary/70 rounded-lg" />
-            </div>
+            
+            {/* QR Code Finder Overlay - Only show when scanning */}
+            {isScanning && !scanSuccess && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-64 h-64">
+                  {/* Corner markers */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary animate-pulse" />
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary animate-pulse" />
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary animate-pulse" />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary animate-pulse" />
+                  
+                  {/* Center square */}
+                  <div className="absolute inset-4 border-2 border-dashed border-primary/50 rounded-lg" />
+                </div>
+                
+                {/* Scanning instruction */}
+                <div className="absolute bottom-4 left-0 right-0 text-center">
+                  <p className="text-sm font-medium text-white bg-black/60 rounded-full px-4 py-2 inline-block">
+                    Apunta al código QR del evento
+                  </p>
+                </div>
+              </div>
+            )}
         </div>
       </DialogContent>
     </Dialog>
