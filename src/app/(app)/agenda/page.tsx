@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEventStatus, canMarkAttendance, decodeEventQR } from '@/lib/event-utils';
 import { Button } from '@/components/ui/button';
 import { EventTimeline } from '@/components/events/EventTimeline';
+import { checkAndAwardBadges } from '@/lib/badges';
 
 function EventCardSkeleton() {
   return (
@@ -188,6 +189,8 @@ export default function AgendaPage() {
     const userRef = doc(firestore, 'users', user.uid);
 
     try {
+        let newAttendanceCount = 0;
+        
         await runTransaction(firestore, async (transaction) => {
             // 1. Check if attendance already exists
             const attendanceDocId = `${user.uid}_${eventForAttendance.id}`;
@@ -214,25 +217,75 @@ export default function AgendaPage() {
                 timestamp: serverTimestamp(),
             });
 
-            // 4. Increment user points
+            // 4. Increment user points and attendance count
             const userDoc = await transaction.get(userRef);
             if (!userDoc.exists()) {
                 throw new Error("User document not found!");
             }
             const currentPoints = userDoc.data().points || 0;
+            const currentAttendanceCount = userDoc.data().attendanceCount || 0;
             const pointsToAdd = eventForAttendance.pointsPerAttendance || 100;
-            transaction.update(userRef, { points: currentPoints + pointsToAdd });
+            
+            newAttendanceCount = currentAttendanceCount + 1;
+            
+            transaction.update(userRef, { 
+                points: currentPoints + pointsToAdd,
+                attendanceCount: newAttendanceCount,
+            });
         });
+
+        // Check for new badges after successful attendance
+        const newBadges = await checkAndAwardBadges(firestore, user.uid, newAttendanceCount);
 
         // Success feedback
         const pointsEarned = eventForAttendance.pointsPerAttendance || 100;
-        toast({
-            title: '¡Asistencia Registrada! 🎉',
-            description: `Has ganado ${pointsEarned} puntos por asistir a ${eventForAttendance.title}.`,
-        });
-
-        // TODO: Play success sound
-        // TODO: Haptic feedback if available
+        
+        if (newBadges.length > 0) {
+            // Show badge notification
+            toast({
+                title: '🏆 ¡Nueva Insignia Desbloqueada!',
+                description: `Has desbloqueado "${newBadges[0].name}". ¡Felicitaciones!`,
+                duration: 8000,
+            });
+            
+            // Play celebratory sound
+            try {
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Happy ascending notes
+                oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C
+                oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.15); // E
+                oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.3); // G
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.6);
+            } catch (e) {
+                console.error('Audio error:', e);
+            }
+            
+            // After a delay, show points notification
+            setTimeout(() => {
+                toast({
+                    title: '✅ Asistencia Registrada',
+                    description: `+${pointsEarned} puntos por asistir a ${eventForAttendance.title}.`,
+                });
+            }, 1500);
+        } else {
+            // Regular success notification
+            toast({
+                title: '¡Asistencia Registrada! 🎉',
+                description: `Has ganado ${pointsEarned} puntos por asistir a ${eventForAttendance.title}.`,
+            });
+        }
 
     } catch (e: any) {
         console.error("Transaction failed: ", e);

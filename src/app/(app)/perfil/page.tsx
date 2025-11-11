@@ -26,6 +26,7 @@ import type { Attendance, CongressEvent, Participant } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserBadges } from "@/components/profile/UserBadges";
 
 
 export default function PerfilPage() {
@@ -388,6 +389,16 @@ export default function PerfilPage() {
               </AlertDescription>
             </Alert>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Badges Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <UserBadges 
+            badges={userStats?.badges} 
+            attendanceCount={userStats?.attendanceCount || 0}
+          />
         </CardContent>
       </Card>
     </div>
