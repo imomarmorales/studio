@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCollection, useFirebase, useUser, useMemoFirebase } from '@/firebase';
@@ -8,13 +8,14 @@ import { collection, query, orderBy, serverTimestamp, doc, runTransaction } from
 import type { CongressEvent } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Bell, X } from 'lucide-react';
 import { EventDetailsDialog } from '@/components/events/EventDetailsDialog';
 import { QrScannerDialog } from '@/components/events/QrScannerDialog';
 import { useToast } from '@/hooks/use-toast';
 import { EventCard } from '@/components/events/EventCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEventStatus, canMarkAttendance, decodeEventQR } from '@/lib/event-utils';
+import { Button } from '@/components/ui/button';
 
 function EventCardSkeleton() {
   return (
@@ -39,12 +40,94 @@ export default function AgendaPage() {
   const [isScannerOpen, setScannerOpen] = useState(false);
   const [eventForAttendance, setEventForAttendance] = useState<CongressEvent | null>(null);
   const [filterTab, setFilterTab] = useState<'all' | 'in-progress' | 'upcoming'>('all');
+  const [dismissedBanner, setDismissedBanner] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const eventsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'events'), orderBy('dateTime', 'asc')) : null),
     [firestore]
   );
   const { data: events, isLoading, error} = useCollection<CongressEvent>(eventsQuery);
+
+  // Update current time every minute to refresh event statuses
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check for newly started events and show notification
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+
+    const inProgressEvents = events.filter(e => getEventStatus(e) === 'in-progress');
+    
+    if (inProgressEvents.length > 0 && !dismissedBanner) {
+      // Play subtle notification sound
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 600;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+      } catch (e) {
+        // Silent fail if audio context not available
+      }
+    }
+  }, [events, dismissedBanner]);
+
+  // Check for events starting soon (15 minutes before)
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+
+    const checkUpcomingEvents = () => {
+      const now = new Date();
+
+      events.forEach((event) => {
+        const eventStart = new Date(event.dateTime);
+        const timeDiff = eventStart.getTime() - now.getTime();
+        const minutesUntilStart = Math.floor(timeDiff / 60000);
+
+        // Notify 15 minutes before (with 1-minute tolerance window)
+        if (minutesUntilStart === 15 && !sessionStorage.getItem(`notified-${event.id}-15`)) {
+          toast({
+            title: '⏰ Evento por comenzar',
+            description: `"${event.title}" comienza en 15 minutos.`,
+            duration: 8000,
+          });
+          sessionStorage.setItem(`notified-${event.id}-15`, 'true');
+        }
+
+        // Notify when event starts (with 1-minute tolerance)
+        if (minutesUntilStart === 0 && !sessionStorage.getItem(`notified-${event.id}-start`)) {
+          toast({
+            title: '🔴 ¡Evento Iniciando!',
+            description: `"${event.title}" está comenzando ahora.`,
+            duration: 10000,
+          });
+          sessionStorage.setItem(`notified-${event.id}-start`, 'true');
+          setDismissedBanner(false); // Show banner again
+        }
+      });
+    };
+
+    checkUpcomingEvents();
+    const interval = setInterval(checkUpcomingEvents, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [events, toast]);
 
   const handleMarkAttendanceClick = (event: CongressEvent) => {
     if (!canMarkAttendance(event)) {
@@ -170,6 +253,7 @@ export default function AgendaPage() {
 
   const inProgressCount = events?.filter(e => getEventStatus(e) === 'in-progress').length || 0;
   const upcomingCount = events?.filter(e => getEventStatus(e) === 'upcoming').length || 0;
+  const inProgressEvents = events?.filter(e => getEventStatus(e) === 'in-progress') || [];
 
   return (
     <div className="space-y-8">
@@ -177,6 +261,49 @@ export default function AgendaPage() {
         title="Agenda y Eventos"
         description="Explora las conferencias, talleres y actividades disponibles."
       />
+
+      {/* Banner for events in progress */}
+      {inProgressEvents.length > 0 && !dismissedBanner && (
+        <Alert className="border-red-500 bg-red-50 dark:bg-red-950/20 animate-in slide-in-from-top-5 duration-500">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <Bell className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 animate-pulse" />
+              <div className="flex-1">
+                <AlertTitle className="text-red-900 dark:text-red-100 font-bold">
+                  🔴 {inProgressEvents.length} {inProgressEvents.length === 1 ? 'Evento en Curso' : 'Eventos en Curso'}
+                </AlertTitle>
+                <AlertDescription className="text-red-800 dark:text-red-200 mt-1">
+                  {inProgressEvents.length === 1 ? (
+                    <>
+                      <strong>{inProgressEvents[0].title}</strong> está en curso ahora. ¡No te lo pierdas!
+                    </>
+                  ) : (
+                    <>
+                      Hay <strong>{inProgressEvents.length} eventos</strong> ocurriendo en este momento.
+                    </>
+                  )}
+                </AlertDescription>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 border-red-600 text-red-700 hover:bg-red-100 dark:border-red-400 dark:text-red-300 dark:hover:bg-red-900/30"
+                  onClick={() => setFilterTab('in-progress')}
+                >
+                  Ver Eventos en Curso →
+                </Button>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400"
+              onClick={() => setDismissedBanner(true)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -191,8 +318,17 @@ export default function AgendaPage() {
           <TabsTrigger value="all">
             Todos ({events?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="in-progress">
-            En Curso {inProgressCount > 0 && <span className="ml-1 animate-pulse">🔴</span>}
+          <TabsTrigger value="in-progress" className={inProgressCount > 0 ? 'data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/30' : ''}>
+            <span className="flex items-center gap-1.5">
+              En Curso
+              {inProgressCount > 0 && (
+                <>
+                  <span className="font-bold">({inProgressCount})</span>
+                  <span className="animate-pulse text-red-600 dark:text-red-400">🔴</span>
+                </>
+              )}
+              {inProgressCount === 0 && '(0)'}
+            </span>
           </TabsTrigger>
           <TabsTrigger value="upcoming">
             Próximos ({upcomingCount})
