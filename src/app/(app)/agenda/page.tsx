@@ -16,6 +16,7 @@ import { EventCard } from '@/components/events/EventCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEventStatus, canMarkAttendance, decodeEventQR } from '@/lib/event-utils';
 import { Button } from '@/components/ui/button';
+import { EventTimeline } from '@/components/events/EventTimeline';
 
 function EventCardSkeleton() {
   return (
@@ -42,6 +43,7 @@ export default function AgendaPage() {
   const [filterTab, setFilterTab] = useState<'all' | 'in-progress' | 'upcoming'>('all');
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
 
   const eventsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'events'), orderBy('dateTime', 'asc')) : null),
@@ -313,29 +315,53 @@ export default function AgendaPage() {
         </Alert>
       )}
 
-      <Tabs value={filterTab} onValueChange={(v) => setFilterTab(v as typeof filterTab)}>
-        <TabsList className="grid w-full grid-cols-3 lg:w-96">
-          <TabsTrigger value="all">
-            Todos ({events?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="in-progress" className={inProgressCount > 0 ? 'data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/30' : ''}>
-            <span className="flex items-center gap-1.5">
-              En Curso
-              {inProgressCount > 0 && (
-                <>
-                  <span className="font-bold">({inProgressCount})</span>
-                  <span className="animate-pulse text-red-600 dark:text-red-400">🔴</span>
-                </>
-              )}
-              {inProgressCount === 0 && '(0)'}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="upcoming">
-            Próximos ({upcomingCount})
-          </TabsTrigger>
-        </TabsList>
+      {/* View Mode Tabs */}
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)} className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <TabsList className="grid w-full sm:w-auto grid-cols-2">
+            <TabsTrigger value="grid" className="gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              Tarjetas
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Cronograma
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value={filterTab} className="space-y-6">
+          {/* Filter Tabs */}
+          <Tabs value={filterTab} onValueChange={(v) => setFilterTab(v as typeof filterTab)}>
+            <TabsList className="grid w-full sm:w-auto grid-cols-3">
+              <TabsTrigger value="all">
+                Todos ({events?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="in-progress" className={inProgressCount > 0 ? 'data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/30' : ''}>
+                <span className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">En Curso</span>
+                  <span className="sm:hidden">Curso</span>
+                  {inProgressCount > 0 && (
+                    <>
+                      <span className="font-bold">({inProgressCount})</span>
+                      <span className="animate-pulse text-red-600 dark:text-red-400">🔴</span>
+                    </>
+                  )}
+                  {inProgressCount === 0 && '(0)'}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="upcoming">
+                <span className="hidden sm:inline">Próximos ({upcomingCount})</span>
+                <span className="sm:hidden">Próx. ({upcomingCount})</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Grid View */}
+        <TabsContent value="grid" className="space-y-6 mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading && Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={i} />)}
             
@@ -357,6 +383,18 @@ export default function AgendaPage() {
                 {filterTab === 'upcoming' && 'No hay eventos próximos.'}
               </p>
             </div>
+          )}
+        </TabsContent>
+
+        {/* Timeline View */}
+        <TabsContent value="timeline" className="space-y-6 mt-0">
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <EventTimeline events={filteredEvents} />
           )}
         </TabsContent>
       </Tabs>
