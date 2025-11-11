@@ -16,25 +16,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, addDoc, query, orderBy, doc } from 'firebase/firestore';
 import type { CongressEvent, Participant } from '@/lib/types';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, QrCode } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, QrCode, Edit, Users as UsersIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { EventEditDialog } from '@/components/admin/EventEditDialog';
+import { EventQrManagementDialog } from '@/components/admin/EventQrManagementDialog';
+import { EventAttendeesDialog } from '@/components/admin/EventAttendeesDialog';
+import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
@@ -58,100 +54,7 @@ const formSchema = z.object({
 
 type EventFormValues = z.infer<typeof formSchema>;
 
-function EventQrDialog({ event, isOpen, onOpenChange }: { event: CongressEvent | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
-    if (!event) return null;
-    const qrData = `${event.id}|${event.qrToken}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}`;
-
-    const handleDownloadQR = () => {
-        const link = document.createElement('a');
-        link.href = qrCodeUrl;
-        link.download = `QR-${event.title.replace(/\s+/g, '-')}-${event.id}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handlePrintQR = () => {
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>QR - ${event.title}</title>
-                        <style>
-                            body { 
-                                display: flex; 
-                                flex-direction: column; 
-                                align-items: center; 
-                                justify-content: center; 
-                                height: 100vh; 
-                                margin: 0; 
-                                font-family: Arial, sans-serif;
-                            }
-                            h1 { margin: 20px 0; }
-                            img { border: 4px solid #000; padding: 20px; }
-                            .info { margin-top: 20px; text-align: center; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>${event.title}</h1>
-                        <img src="${qrCodeUrl}" alt="Código QR" />
-                        <div class="info">
-                            <p><strong>Fecha:</strong> ${new Date(event.dateTime).toLocaleDateString('es-MX')}</p>
-                            <p><strong>Lugar:</strong> ${event.location}</p>
-                            <p><strong>Puntos:</strong> ${event.pointsPerAttendance}</p>
-                        </div>
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-        }
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Código QR para: {event.title}</DialogTitle>
-                    <DialogDescription>
-                        QR permanente para registro de asistencia. Puedes descargarlo o imprimirlo.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col items-center gap-4 p-4">
-                    <div className="border-4 border-primary p-4 rounded-lg bg-white">
-                        <Image
-                            src={qrCodeUrl}
-                            alt={`Código QR para ${event.title}`}
-                            width={300}
-                            height={300}
-                            className="rounded-lg"
-                        />
-                    </div>
-                    <div className="text-sm text-muted-foreground text-center">
-                        <p><strong>ID del Evento:</strong> {event.id}</p>
-                        <p><strong>Token:</strong> {event.qrToken}</p>
-                        <p className={cn("font-semibold", event.qrValid ? "text-green-600" : "text-destructive")}>
-                            Estado: {event.qrValid ? "✓ Válido" : "✗ Invalidado"}
-                        </p>
-                    </div>
-                    <div className="flex gap-2 w-full">
-                        <Button onClick={handleDownloadQR} className="flex-1">
-                            Descargar PNG
-                        </Button>
-                        <Button onClick={handlePrintQR} variant="outline" className="flex-1">
-                            Imprimir
-                        </Button>
-                    </div>
-                    <Button onClick={() => onOpenChange(false)} variant="secondary" className="w-full">
-                        Cerrar
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-}
+// Remove EventQrDialog since we now use EventQrManagementDialog
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -199,6 +102,9 @@ function ManageEventsContent() {
   const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEventForQr, setSelectedEventForQr] = useState<CongressEvent | null>(null);
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState<CongressEvent | null>(null);
+  const [selectedEventForAttendees, setSelectedEventForAttendees] = useState<CongressEvent | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(formSchema),
@@ -215,9 +121,11 @@ function ManageEventsContent() {
 
   const eventsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'events'), orderBy('dateTime', 'desc')) : null),
-    [firestore]
+    [firestore, refreshKey]
   );
   const { data: events, isLoading, error } = useCollection<CongressEvent>(eventsQuery);
+
+  const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
   const onSubmit: SubmitHandler<EventFormValues> = async (data) => {
     if (!firestore) return;
@@ -483,15 +391,44 @@ function ManageEventsContent() {
                             )}
                             <div className="space-y-4">
                                 {events && events.map((event) => (
-                                    <Card key={event.id} className="flex items-center justify-between p-4">
-                                        <div className="space-y-1">
-                                            <p className="font-semibold">{event.title}</p>
-                                            <p className="text-sm text-muted-foreground">{new Date(event.dateTime).toLocaleString()}</p>
+                                    <Card key={event.id} className="p-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div className="flex-1 space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold">{event.title}</p>
+                                                    <Badge variant={event.qrValid ? "default" : "destructive"} className="text-xs">
+                                                        {event.qrValid ? "QR Válido" : "QR Invalidado"}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">
+                                                    📅 {new Date(event.dateTime).toLocaleDateString('es-ES', {
+                                                        weekday: 'short',
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    📍 {event.location} • 🏆 {event.pointsPerAttendance} pts
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => setSelectedEventForEdit(event)}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Editar
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={() => setSelectedEventForQr(event)}>
+                                                    <QrCode className="mr-2 h-4 w-4" />
+                                                    QR
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={() => setSelectedEventForAttendees(event)}>
+                                                    <UsersIcon className="mr-2 h-4 w-4" />
+                                                    Asistentes
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={() => setSelectedEventForQr(event)}>
-                                            <QrCode className="mr-2 h-4 w-4" />
-                                            Ver QR
-                                        </Button>
                                     </Card>
                                 ))}
                                 {!isLoading && events?.length === 0 && (
@@ -502,7 +439,25 @@ function ManageEventsContent() {
                     </Card>
                 </div>
             </div>
-            <EventQrDialog event={selectedEventForQr} isOpen={!!selectedEventForQr} onOpenChange={() => setSelectedEventForQr(null)} />
+            
+            {/* Dialogs */}
+            <EventEditDialog
+                event={selectedEventForEdit}
+                isOpen={!!selectedEventForEdit}
+                onOpenChange={() => setSelectedEventForEdit(null)}
+                onEventUpdated={handleRefresh}
+            />
+            <EventQrManagementDialog
+                event={selectedEventForQr}
+                isOpen={!!selectedEventForQr}
+                onOpenChange={() => setSelectedEventForQr(null)}
+                onEventUpdated={handleRefresh}
+            />
+            <EventAttendeesDialog
+                event={selectedEventForAttendees}
+                isOpen={!!selectedEventForAttendees}
+                onOpenChange={() => setSelectedEventForAttendees(null)}
+            />
             </div>
         </SidebarInset>
        </SidebarProvider>
