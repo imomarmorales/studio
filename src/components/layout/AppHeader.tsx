@@ -65,8 +65,8 @@ export function AppHeader() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild><Link href="/app/perfil">Perfil</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href="/app/dashboard">Dashboard</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href="/perfil">Perfil</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href="/dashboard">Dashboard</Link></DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />

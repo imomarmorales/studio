@@ -143,7 +143,7 @@ export function LoginForm() {
         if (values.email === 'admin@congreso.mx') {
             router.push('/admin/events');
         } else {
-            router.push('/app/dashboard');
+            router.push('/agenda');
         }
       }
     } catch (error: any) {
