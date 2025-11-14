@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { calculateDuration } from '@/lib/event-utils';
+import { uploadImage, generateUniqueFileName, validateImageFile } from '@/lib/upload-image';
 import {
   Dialog,
   DialogContent,
@@ -15,17 +17,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, X, Image as ImageIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,8 +48,8 @@ const formSchema = z.object({
   location: z.string().min(3, 'La ubicación es requerida.'),
   pointsPerAttendance: z.number().min(1, 'Los puntos deben ser al menos 1.').default(100),
   speakers: z.string().optional(),
-  duration: z.string().optional(),
   attendanceRules: z.string().optional(),
+  imageFile: z.any().optional(),
 }).refine((data) => {
   if (data.endDateTime && data.dateTime) {
     return data.endDateTime > data.dateTime;
@@ -72,6 +75,8 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(formSchema),
@@ -87,11 +92,46 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
         location: event.location,
         pointsPerAttendance: event.pointsPerAttendance,
         speakers: event.speakers?.join(', ') || '',
-        duration: event.duration || '',
         attendanceRules: event.attendanceRules || '',
       });
+      setImagePreview(event.imageUrl || null);
     }
   }, [event, form]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast({
+        variant: 'destructive',
+        title: 'Error de imagen',
+        description: validation.error,
+      });
+      return;
+    }
+
+    form.setValue('imageFile', file);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    form.setValue('imageFile', undefined);
+    if (event) {
+      setImagePreview(event.imageUrl || null);
+    } else {
+      setImagePreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const onSubmit = async (data: EventFormValues) => {
     if (!firestore || !event) return;
@@ -100,6 +140,19 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
     try {
       const speakers = data.speakers ? data.speakers.split(',').map(s => s.trim()).filter(Boolean) : [];
       
+      // Upload new image if provided
+      let imageUrl = event.imageUrl;
+      if (data.imageFile) {
+        const fileName = generateUniqueFileName(data.imageFile.name);
+        imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
+      }
+
+      // Calculate duration
+      let duration: string | undefined;
+      if (data.endDateTime) {
+        duration = calculateDuration(data.dateTime, data.endDateTime);
+      }
+      
       const eventRef = doc(firestore, 'events', event.id);
       await updateDoc(eventRef, {
         title: data.title,
@@ -107,9 +160,10 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
         dateTime: data.dateTime.toISOString(),
         endDateTime: data.endDateTime?.toISOString() || null,
         location: data.location,
+        imageUrl: imageUrl,
         pointsPerAttendance: data.pointsPerAttendance,
         speakers: speakers.length > 0 ? speakers : null,
-        duration: data.duration || null,
+        duration: duration || null,
         attendanceRules: data.attendanceRules || null,
       });
 
@@ -162,6 +216,10 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
 
   if (!event) return null;
 
+  const startDateTime = form.watch('dateTime');
+  const endDateTime = form.watch('endDateTime');
+  const calculatedDuration = startDateTime && endDateTime ? calculateDuration(startDateTime, endDateTime) : null;
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -175,6 +233,65 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Image Upload Section */}
+              <FormField
+                control={form.control}
+                name="imageFile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Banner del Evento</FormLabel>
+                    <FormControl>
+                      <div className="space-y-3">
+                        {imagePreview ? (
+                          <div className="relative rounded-lg overflow-hidden border-2 border-dashed">
+                            <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                            {form.getValues('imageFile') && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2"
+                                onClick={removeImage}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <div 
+                            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <ImageIcon className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">Haz clic para cambiar imagen</p>
+                          </div>
+                        )}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageSelect}
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          Cambiar Imagen
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Sube una nueva imagen para actualizar el banner del evento
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="title"
@@ -233,12 +350,12 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                   name="endDateTime"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Fecha y Hora de Fin (opcional)</FormLabel>
+                      <FormLabel>Fecha y Hora de Fin</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(field.value, "PPP") : <span>Seleccionar</span>}
+                              {field.value ? format(field.value, "PPP") : <span>Opcional</span>}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -252,6 +369,15 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                   )}
                 />
               </div>
+
+              {calculatedDuration && (
+                <Alert>
+                  <AlertDescription className="flex items-center gap-2">
+                    <span className="font-semibold">Duración calculada:</span>
+                    <span>{calculatedDuration}</span>
+                  </AlertDescription>
+                </Alert>
+              )}
               
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -297,35 +423,19 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                 )}
               />
               
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="duration"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Duración</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="2 horas" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="attendanceRules"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reglas de Asistencia</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Registro obligatorio" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="attendanceRules"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reglas de Asistencia</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Especifica las reglas..." rows={2} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <DialogFooter className="gap-2 sm:gap-0">
                 <Button

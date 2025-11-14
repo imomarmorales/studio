@@ -28,6 +28,7 @@ import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firesto
 
 const formSchema = z.object({
   name: z.string().optional(),
+  lastName: z.string().optional(),
   email: z.string().email({ message: 'Por favor, introduce un correo válido.' }),
   password: z
     .string()
@@ -42,7 +43,8 @@ const studentEmailSchema = z.string().email().refine(
 const adminEmailSchema = z.literal('admin@congreso.mx');
 
 const registrationSchema = formSchema.extend({
-  name: z.string().min(3, 'El nombre es requerido.'),
+  name: z.string().min(3, 'El nombre completo es requerido (mínimo 3 caracteres).'),
+  lastName: z.string().min(3, 'Los apellidos son requeridos (mínimo 3 caracteres).'),
   email: z.union([studentEmailSchema, adminEmailSchema], {
     errorMap: () => ({ message: "El correo debe ser de @alumnos.uat.edu.mx o admin@congreso.mx" })
   })
@@ -65,6 +67,7 @@ export function LoginForm() {
     resolver: zodResolver(currentSchema),
     defaultValues: {
       name: '',
+      lastName: '',
       email: '',
       password: '',
     },
@@ -83,8 +86,12 @@ export function LoginForm() {
     try {
       if (isRegistering) {
         // Registration logic for students or admin
-        if (!('name' in values) || !values.name) {
-            toast({ variant: 'destructive', title: 'Error de Registro', description: 'El nombre es requerido.' });
+        if (!('name' in values) || !values.name || !('lastName' in values) || !values.lastName) {
+            toast({ 
+              variant: 'destructive', 
+              title: 'Error de Registro', 
+              description: 'El nombre completo y apellidos son requeridos.' 
+            });
             return;
         }
         
@@ -108,10 +115,10 @@ export function LoginForm() {
           values.password
         );
         const user = userCredential.user;
-        const name = values.name;
+        const fullName = `${values.name} ${values.lastName}`;
 
         // Update Firebase Auth profile
-        await updateProfile(user, { displayName: name, photoURL: `https://picsum.photos/seed/${user.uid}/200` });
+        await updateProfile(user, { displayName: fullName, photoURL: `https://picsum.photos/seed/${user.uid}/200` });
         
         const isAdmin = values.email === 'admin@congreso.mx';
 
@@ -119,13 +126,15 @@ export function LoginForm() {
         const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, {
           id: user.uid,
-          name: name,
+          name: fullName,
           email: user.email,
           points: 0,
           role: isAdmin ? 'admin' : 'alumno',
           digitalCredentialQR: user.uid,
           photoURL: `https://picsum.photos/seed/${user.uid}/200`,
-          createdAt: new Date()
+          createdAt: new Date(),
+          attendanceCount: 0,
+          badges: []
         });
 
         toast({
@@ -160,29 +169,57 @@ export function LoginForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {isRegistering && (
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre Completo</FormLabel>
-                <FormControl>
-                  <Input placeholder="Tu nombre completo" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <>
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                📝 Tu nombre completo es importante
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                Será usado para el pase de lista en los eventos del congreso.
+              </p>
+            </div>
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre(s) *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Juan Carlos" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Apellidos *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="García López" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
         )}
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Correo Electrónico</FormLabel>
+              <FormLabel>Correo Institucional {isRegistering && '*'}</FormLabel>
               <FormControl>
                 <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
               </FormControl>
+              {isRegistering && (
+                <p className="text-xs text-muted-foreground">
+                  Debe ser tu correo institucional @alumnos.uat.edu.mx
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -196,6 +233,11 @@ export function LoginForm() {
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
+              {isRegistering && (
+                <p className="text-xs text-muted-foreground">
+                  Mínimo 6 caracteres
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}

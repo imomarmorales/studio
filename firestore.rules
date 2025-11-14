@@ -16,13 +16,18 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Check if user is admin by email OR by role in Firestore
-      // This allows both methods to work seamlessly
+      // Admin tiene acceso TOTAL - solo verificar el email
       return isSignedIn() && (
-        request.auth.token.email == 'admin@congreso.mx' || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        request.auth.token.email == 'admin@congreso.mx' ||
+        request.auth.token.email == 'admin@congreso.com'
       );
+    }
+    
+    // ============================================
+    // ADMIN TOTAL ACCESS - Acceso completo a TODO
+    // ============================================
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
 
     // ============================================
@@ -37,32 +42,31 @@ service cloud.firestore {
       // (Needed for leaderboards, participant lists, etc.)
       allow get: if isSignedIn();
       
-      // List all users - admins can see everyone, users can see everyone for rankings
+      // List all users - everyone can see for rankings
       allow list: if isSignedIn();
       
-      // Update - users can update their own profile, admins can update anyone
-      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // Update - users can update their own profile
+      allow update: if isSignedIn() && isOwner(userId);
       
-      // Delete - only admins can delete users
-      allow delete: if isAdmin();
+      // Delete - forbidden for regular users (admin ya tiene acceso con regla general)
+      allow delete: if false;
       
       // ============================================
       // ATTENDANCE SUBCOLLECTION
       // Tracks which events each user attended
       // ============================================
       match /attendance/{attendanceId} {
-        // Users can read their own attendance, admins can read anyone's
-        allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+        // Users can read their own attendance
+        allow get: if isSignedIn() && isOwner(userId);
         
-        // Users can list their own attendance, admins can list anyone's
-        allow list: if isSignedIn() && (isOwner(userId) || isAdmin());
+        // Users can list their own attendance
+        allow list: if isSignedIn() && isOwner(userId);
         
         // Users can create their own attendance records (scan QR)
-        // Admins can create attendance for anyone (manual registration)
-        allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+        allow create: if isSignedIn() && isOwner(userId);
         
-        // Only admins can update or delete attendance records
-        allow update, delete: if isAdmin();
+        // Update/delete forbidden for regular users (admin ya tiene acceso)
+        allow update, delete: if false;
       }
     }
     
@@ -71,30 +75,28 @@ service cloud.firestore {
     // Stores congress events with details, QR codes, images
     // ============================================
     match /events/{eventId} {
-      // Anyone signed in can read individual events
+      // Anyone signed in can read events
       allow get: if isSignedIn();
       
       // Anyone signed in can list all events (for agenda, schedule)
       allow list: if isSignedIn();
       
-      // Only admins can create, update, or delete events
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // Create/update/delete forbidden for regular users (admin ya tiene acceso)
+      allow create, update, delete: if false;
       
       // ============================================
       // ATTENDEES SUBCOLLECTION (mirror for admin queries)
       // Tracks who attended each event
       // ============================================
       match /attendees/{attendeeId} {
-        // Admins can read all attendees for an event
-        allow get, list: if isAdmin();
+        // Anyone signed in can read attendees
+        allow get, list: if isSignedIn();
         
         // Users can create their own attendance when scanning QR
         allow create: if isSignedIn() && request.auth.uid == attendeeId;
         
-        // Only admins can delete attendance records
-        allow delete: if isAdmin();
+        // Delete forbidden for regular users (admin ya tiene acceso)
+        allow delete: if false;
       }
     }
 

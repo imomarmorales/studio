@@ -3,6 +3,10 @@
 import { Shield, Users, Home, LogOut, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/shared/Logo';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +25,30 @@ const menuItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Sesión cerrada',
+        description: 'Has cerrado sesión correctamente.',
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo cerrar la sesión.',
+      });
+    }
+  };
+
   return (
     <Sidebar collapsible="icon" aria-label="Navegación de Administrador">
       <SidebarHeader>
@@ -43,11 +71,9 @@ export function AdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Cerrar Sesión" asChild>
-                <Link href="/">
-                    <LogOut />
-                    <span>Cerrar Sesión</span>
-                </Link>
+              <SidebarMenuButton tooltip="Cerrar Sesión" onClick={handleLogout}>
+                <LogOut />
+                <span>Cerrar Sesión</span>
               </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

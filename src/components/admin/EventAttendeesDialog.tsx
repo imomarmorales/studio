@@ -78,11 +78,12 @@ export function EventAttendeesDialog({ event, isOpen, onOpenChange }: EventAtten
     if (!event || !attendeesWithDetails) return;
 
     // Create CSV content
-    const headers = ['Nombre', 'Email', 'Fecha y Hora', 'Puntos'];
+    const headers = ['Nombre Completo', 'Correo Institucional', 'Fecha de Registro', 'Hora de Registro', 'Puntos Obtenidos'];
     const rows = attendeesWithDetails.map((attendee) => [
       attendee.participant?.name || 'N/A',
       attendee.participant?.email || 'N/A',
-      attendee.timestamp?.toDate?.()?.toLocaleString('es-ES') || 'N/A',
+      attendee.timestamp?.toDate?.()?.toLocaleDateString('es-ES') || 'N/A',
+      attendee.timestamp?.toDate?.()?.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) || 'N/A',
       event.pointsPerAttendance.toString(),
     ]);
 
@@ -96,8 +97,10 @@ export function EventAttendeesDialog({ event, isOpen, onOpenChange }: EventAtten
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     
+    const fileName = `Asistentes-${event.title.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    
     link.setAttribute('href', url);
-    link.setAttribute('download', `Asistentes-${event.title.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
     
     document.body.appendChild(link);

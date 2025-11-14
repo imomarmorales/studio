@@ -110,3 +110,27 @@ export function getTimeUntilEvent(dateTime: string): string {
   if (hours > 0) return `En ${hours}h ${minutes}m`;
   return `En ${minutes}m`;
 }
+
+/**
+ * Calcula la duración entre dos fechas y la retorna en formato legible
+ * @param startDateTime - Fecha/hora de inicio
+ * @param endDateTime - Fecha/hora de fin
+ * @returns Duración formateada (ej: "2 horas", "1 hora 30 min", "45 minutos")
+ */
+export function calculateDuration(startDateTime: Date, endDateTime: Date): string {
+  const diffMs = endDateTime.getTime() - startDateTime.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  
+  if (diffMinutes < 60) {
+    return `${diffMinutes} minutos`;
+  }
+  
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+  
+  if (minutes === 0) {
+    return hours === 1 ? '1 hora' : `${hours} horas`;
+  }
+  
+  return `${hours} ${hours === 1 ? 'hora' : 'horas'} ${minutes} min`;
+}
