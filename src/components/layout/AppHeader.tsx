@@ -51,18 +51,7 @@ export function AppHeader() {
         {/* Placeholder to push content */}
        </div>
       <div className="flex w-full items-center justify-end gap-2 md:gap-4">
-        {/* Mobile Logout Button - Visible only on mobile */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="md:hidden text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-4 w-4 mr-1" />
-          Salir
-        </Button>
-        
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>
         </Button>

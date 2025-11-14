@@ -70,7 +70,11 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Cerrar Sesión" onClick={handleSignOut}>
+            <SidebarMenuButton 
+              tooltip="Cerrar Sesión" 
+              onClick={handleSignOut}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
                 <LogOut />
                 <span>Cerrar Sesión</span>
             </SidebarMenuButton>

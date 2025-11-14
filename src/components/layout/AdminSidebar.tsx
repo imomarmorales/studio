@@ -71,7 +71,11 @@ export function AdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Cerrar Sesión" onClick={handleLogout}>
+              <SidebarMenuButton 
+                tooltip="Cerrar Sesión" 
+                onClick={handleLogout}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
                 <LogOut />
                 <span>Cerrar Sesión</span>
               </SidebarMenuButton>
