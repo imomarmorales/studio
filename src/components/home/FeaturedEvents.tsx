@@ -1,32 +1,21 @@
 'use client';
 
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Award } from 'lucide-react';
 
 interface FeaturedEvent {
   id: string;
   title: string;
   description: string;
-  image: string; // Base64 or URL
+  image: string;
   badge1?: string;
   badge2?: string;
   order: number;
 }
 
 export function FeaturedEvents() {
-  const { firestore } = useFirebase();
-
-  const eventsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'featuredEvents'), orderBy('order', 'asc'), limit(3)) : null),
-    [firestore]
-  );
-  const { data: events } = useCollection<FeaturedEvent>(eventsQuery);
-
-  // Default featured events
+  // Default featured events (shows always on public page)
   const defaultEvents: FeaturedEvent[] = [
     {
       id: '1',
@@ -57,8 +46,6 @@ export function FeaturedEvents() {
     },
   ];
 
-  const displayEvents = events && events.length > 0 ? events : defaultEvents;
-
   return (
     <div className="py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -72,7 +59,7 @@ export function FeaturedEvents() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {displayEvents.slice(0, 3).map((event, index) => (
+          {defaultEvents.map((event) => (
             <div
               key={event.id}
               className="group relative rounded-2xl overflow-hidden bg-card border hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
