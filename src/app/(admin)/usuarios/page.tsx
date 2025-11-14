@@ -21,9 +21,15 @@ export default function UsuariosPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   
+  // Don't create query until user is loaded and authenticated
   const usersQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
-    [firestore, user]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'users'), orderBy('points', 'desc'));
+    },
+    [firestore, user, isUserLoading]
   );
   
   const { data: users, isLoading: loading, error } = useCollection<User>(usersQuery);

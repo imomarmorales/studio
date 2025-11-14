@@ -57,8 +57,13 @@ export default function PerfilPage() {
 
   // Query all users to calculate ranking position
   const usersQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
-    [firestore, user]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'users'), orderBy('points', 'desc'));
+    },
+    [firestore, user, isUserLoading]
   );
   const { data: allUsers } = useCollection<Participant>(usersQuery);
 

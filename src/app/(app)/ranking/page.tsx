@@ -63,8 +63,13 @@ export default function RankingPage() {
 
   // Query users with points > 0, ordered by points descending
   const usersQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
-    [firestore, user]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'users'), orderBy('points', 'desc'));
+    },
+    [firestore, user, isUserLoading]
   );
   const { data: allUsers, isLoading, error } = useCollection<Participant>(usersQuery);
 

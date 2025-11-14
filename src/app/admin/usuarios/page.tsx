@@ -1,7 +1,7 @@
 'use client';
 
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useFirebase, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +24,16 @@ interface User {
 
 function UsuariosContent() {
   const { firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
   
   const usersQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'users') : null),
-    [firestore]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'users'), orderBy('points', 'desc'));
+    },
+    [firestore, user, isUserLoading]
   );
   
   const { data: usersData, isLoading: loading, error } = useCollection<User>(usersQuery);
@@ -79,7 +85,7 @@ function UsuariosContent() {
     }
   };
 
-  if (loading) {
+  if (isUserLoading || loading) {
     return (
       <div className="space-y-6">
         <div>
