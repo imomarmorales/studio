@@ -2,6 +2,10 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
 
 interface Sponsor {
   id: string;
@@ -11,27 +15,45 @@ interface Sponsor {
 }
 
 export function SponsorsCarousel() {
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  
-  // Default sponsors (shows always on public page) - Using base64 SVG
-  const defaultSponsors = [
-    { name: 'TechCorp', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzQzMzhjYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5UZWNoQ29ycDwvdGV4dD48L3N2Zz4=' },
-    { name: 'InnovateLab', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Jbm5vdmF0ZUxhYjwvdGV4dD48L3N2Zz4=' },
-    { name: 'FutureSoft', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzI1NjNlYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5GdXR1cmVTb2Z0PC90ZXh0Pjwvc3ZnPg==' },
-    { name: 'DataMinds', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzA4OTFiMiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5EYXRhTWluZHM8L3RleHQ+PC9zdmc+' },
-    { name: 'CloudNine', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzA1OTY2OSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DbG91ZE5pbmU8L3RleHQ+PC9zdmc+' },
-  ];
+  const [loading, setLoading] = useState(true);
 
-  // Triplicar para efecto infinito
-  const tripleSponsors = [...defaultSponsors, ...defaultSponsors, ...defaultSponsors];
-
-  // Auto-scroll cada 3 segundos
+  // Inicializar Firebase y obtener sponsors
   useEffect(() => {
+    const fetchSponsors = async () => {
+      try {
+        // Inicializar Firebase si no está inicializado
+        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+        const firestore = getFirestore(app);
+        
+        // Obtener sponsors de Firestore
+        const sponsorsQuery = query(collection(firestore, 'sponsors'), orderBy('order', 'asc'));
+        const snapshot = await getDocs(sponsorsQuery);
+        const sponsorsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Sponsor[];
+        
+        setSponsors(sponsorsData);
+      } catch (error) {
+        console.error('Error al cargar sponsors:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSponsors();
+  }, []);
+
+  // Auto-scroll cada 3 segundos si hay sponsors
+  useEffect(() => {
+    if (sponsors.length === 0) return;
+
     const interval = setInterval(() => {
       setCurrentIndex((prev) => {
         const nextIndex = prev + 1;
-        // Resetear al inicio cuando llega al segundo set
-        if (nextIndex >= defaultSponsors.length) {
+        if (nextIndex >= sponsors.length) {
           return 0;
         }
         return nextIndex;
@@ -39,7 +61,15 @@ export function SponsorsCarousel() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [defaultSponsors.length]);
+  }, [sponsors.length]);
+
+  // No mostrar nada si está cargando o no hay sponsors
+  if (loading || sponsors.length === 0) {
+    return null;
+  }
+
+  // Triplicar para efecto infinito
+  const tripleSponsors = [...sponsors, ...sponsors, ...sponsors];
 
   return (
     <div className="py-16 bg-muted/30">
@@ -50,13 +80,13 @@ export function SponsorsCarousel() {
         <div className="relative overflow-hidden">
           <div 
             className="flex items-center gap-8 md:gap-16 transition-transform duration-700 ease-in-out"
-            style={{ transform: `translateX(-${currentIndex * (100 / defaultSponsors.length)}%)` }}
+            style={{ transform: `translateX(-${currentIndex * (100 / sponsors.length)}%)` }}
           >
             {tripleSponsors.map((sponsor, index) => (
               <div
-                key={index}
+                key={`${sponsor.id}-${index}`}
                 className="flex-shrink-0 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100"
-                style={{ minWidth: `${100 / defaultSponsors.length}%` }}
+                style={{ minWidth: `${100 / sponsors.length}%` }}
               >
                 <div className="flex items-center justify-center h-24">
                   <Image

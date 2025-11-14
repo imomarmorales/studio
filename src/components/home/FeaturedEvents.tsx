@@ -4,6 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
 
 interface FeaturedEvent {
   id: string;
@@ -16,36 +21,44 @@ interface FeaturedEvent {
 }
 
 export function FeaturedEvents() {
-  // Default featured events (shows always on public page)
-  const defaultEvents: FeaturedEvent[] = [
-    {
-      id: '1',
-      title: 'Conferencia Inteligencia Artificial',
-      description: 'Descubre las últimas tendencias en IA y Machine Learning. Expertos de la industria compartirán sus conocimientos sobre el futuro de la tecnología.',
-      image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop',
-      badge1: 'Top Rated',
-      badge2: '5 Day Event',
-      order: 1,
-    },
-    {
-      id: '2',
-      title: 'Workshop Desarrollo Web Moderno',
-      description: 'Aprende las mejores prácticas en desarrollo web con React, Next.js y TypeScript. Sesiones prácticas con proyectos reales.',
-      image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=600&fit=crop',
-      badge1: 'Hands-on',
-      badge2: '3 Days',
-      order: 2,
-    },
-    {
-      id: '3',
-      title: 'Hackathon de Innovación',
-      description: 'Participa en nuestro hackathon anual donde podrás crear soluciones innovadoras y competir por increíbles premios.',
-      image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=600&fit=crop',
-      badge1: 'Competition',
-      badge2: '24 Hours',
-      order: 3,
-    },
-  ];
+  const [events, setEvents] = useState<FeaturedEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Obtener eventos destacados de Firestore
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        // Inicializar Firebase si no está inicializado
+        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+        const firestore = getFirestore(app);
+        
+        // Obtener eventos destacados de Firestore (máximo 3)
+        const eventsQuery = query(
+          collection(firestore, 'featuredEvents'),
+          orderBy('order', 'asc'),
+          limit(3)
+        );
+        const snapshot = await getDocs(eventsQuery);
+        const eventsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as FeaturedEvent[];
+        
+        setEvents(eventsData);
+      } catch (error) {
+        console.error('Error al cargar eventos destacados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // No mostrar nada si está cargando o no hay eventos
+  if (loading || events.length === 0) {
+    return null;
+  }
 
   return (
     <div className="py-20 bg-background">
@@ -60,7 +73,7 @@ export function FeaturedEvents() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {defaultEvents.map((event) => (
+          {events.map((event) => (
             <div
               key={event.id}
               className="group relative rounded-2xl overflow-hidden bg-card border hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
