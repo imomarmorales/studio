@@ -114,6 +114,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 function ManageEventsContent() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEventForQr, setSelectedEventForQr] = useState<CongressEvent | null>(null);
   const [selectedEventForEdit, setSelectedEventForEdit] = useState<CongressEvent | null>(null);
@@ -138,8 +139,13 @@ function ManageEventsContent() {
   });
 
   const eventsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'events'), orderBy('dateTime', 'desc')) : null),
-    [firestore, refreshKey]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'events'), orderBy('dateTime', 'desc'));
+    },
+    [firestore, user, isUserLoading, refreshKey]
   );
   const { data: events, isLoading, error } = useCollection<CongressEvent>(eventsQuery);
 

@@ -32,7 +32,7 @@ function EventCardSkeleton() {
 
 export default function AgendaPage() {
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
   const [selectedEvent, setSelectedEvent] = useState<CongressEvent | null>(null);
@@ -41,8 +41,13 @@ export default function AgendaPage() {
   const [filterTab, setFilterTab] = useState<'all' | 'in-progress' | 'upcoming'>('all');
 
   const eventsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'events'), orderBy('dateTime', 'asc')) : null),
-    [firestore]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'events'), orderBy('dateTime', 'asc'));
+    },
+    [firestore, user, isUserLoading]
   );
   const { data: events, isLoading, error} = useCollection<CongressEvent>(eventsQuery);
 

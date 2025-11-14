@@ -69,8 +69,13 @@ export default function PerfilPage() {
 
   // Query all events to get event details for attendance history
   const eventsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'events')) : null),
-    [firestore]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'events'));
+    },
+    [firestore, user, isUserLoading]
   );
   const { data: events } = useCollection<CongressEvent>(eventsQuery);
 

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase, useUser } from '@/firebase';
 import { collection, addDoc, query, orderBy } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
 import { Calendar as CalendarIcon, Loader2, PlusCircle, QrCode } from 'lucide-react';
@@ -71,6 +71,7 @@ function EventQrDialog({ event, isOpen, onOpenChange }: { event: CongressEvent |
 export default function ManageEventsPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEventForQr, setSelectedEventForQr] = useState<CongressEvent | null>(null);
 
@@ -84,8 +85,13 @@ export default function ManageEventsPage() {
   });
 
   const eventsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'events'), orderBy('dateTime', 'desc')) : null),
-    [firestore]
+    () => {
+      if (!firestore) return null;
+      if (isUserLoading) return null; // Wait for auth to complete
+      if (!user) return null; // No user, no query
+      return query(collection(firestore, 'events'), orderBy('dateTime', 'desc'));
+    },
+    [firestore, user, isUserLoading]
   );
   const { data: events, isLoading, error } = useCollection<CongressEvent>(eventsQuery);
 
