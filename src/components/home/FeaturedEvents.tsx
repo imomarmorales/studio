@@ -45,8 +45,9 @@ export function FeaturedEvents() {
         })) as FeaturedEvent[];
         
         setEvents(eventsData);
-      } catch (error) {
-        console.error('Error al cargar eventos destacados:', error);
+      } catch (error: any) {
+        // Silenciar error de permisos - simplemente no mostrar eventos
+        console.log('No se pudieron cargar eventos destacados:', error.code);
       } finally {
         setLoading(false);
       }

@@ -36,8 +36,9 @@ export function SponsorsCarousel() {
         })) as Sponsor[];
         
         setSponsors(sponsorsData);
-      } catch (error) {
-        console.error('Error al cargar sponsors:', error);
+      } catch (error: any) {
+        // Silenciar error de permisos - simplemente no mostrar sponsors
+        console.log('No se pudieron cargar sponsors:', error.code);
       } finally {
         setLoading(false);
       }
