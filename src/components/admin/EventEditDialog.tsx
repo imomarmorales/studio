@@ -273,24 +273,25 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="relative">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="relative px-6 pt-6 pb-4 border-b">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-0 h-8 w-8 rounded-full"
+              className="absolute right-4 top-4 h-10 w-10 rounded-full z-50 bg-background/80 hover:bg-background"
               onClick={() => onOpenChange(false)}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
-            <DialogTitle>Editar Evento</DialogTitle>
+            <DialogTitle className="pr-12">Editar Evento</DialogTitle>
             <DialogDescription>
-              Modifica los detalles del evento. Los cambios se aplicarán inmediatamente.
+              Modifica los detalles del evento
             </DialogDescription>
           </DialogHeader>
           
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" id="edit-event-form">
               {/* Image Upload Section */}
               <FormField
                 control={form.control}
@@ -507,34 +508,43 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                   </FormItem>
                 )}
               />
-              
-              <DialogFooter className="gap-2 sm:gap-0">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isDeleting || isSubmitting}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar
-                </Button>
-                <Button type="submit" disabled={isSubmitting || isDeleting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    'Guardar Cambios'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+              </form>
+            </Form>
+          </div>
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          {/* Fixed Footer */}
+          <DialogFooter className="border-t px-6 py-4 bg-background">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isSubmitting || isDeleting}
+                className="w-full sm:w-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </Button>
+              <div className="flex-1" />
+              <Button 
+                type="submit" 
+                form="edit-event-form"
+                disabled={isSubmitting || isDeleting}
+                className="w-full sm:w-auto"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar Cambios'
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>

@@ -160,68 +160,73 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="relative pr-8">
+        <DialogContent className="sm:max-w-md max-w-[95vw] max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="relative px-6 pt-6 pb-4 border-b">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-0 h-8 w-8 rounded-full z-50"
+              className="absolute right-4 top-4 h-10 w-10 rounded-full z-50 bg-background/80 hover:bg-background"
               onClick={() => onOpenChange(false)}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
-            <DialogTitle>Gestionar QR: {event.title}</DialogTitle>
-            <DialogDescription>
-              Descarga, imprime, regenera o invalida el código QR del evento.
+            <DialogTitle className="pr-12 text-lg">Gestionar QR</DialogTitle>
+            <DialogDescription className="text-sm">
+              {event.title}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex flex-col items-center gap-4 p-4">
-            {/* QR Code */}
-            <div className={cn(
-              "border-4 p-4 rounded-lg bg-white transition-all",
-              event.qrValid ? "border-green-500" : "border-red-500 opacity-50"
-            )}>
-              <Image
-                src={qrCodeUrl}
-                alt={`Código QR para ${event.title}`}
-                width={300}
-                height={300}
-                className="rounded-lg"
-              />
-              {!event.qrValid && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Ban className="h-24 w-24 text-red-500 opacity-50" />
-                </div>
-              )}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex flex-col items-center gap-3">
+              {/* QR Code */}
+              <div className={cn(
+                "border-4 p-3 rounded-lg bg-white transition-all w-full max-w-[280px]",
+                event.qrValid ? "border-green-500" : "border-red-500 opacity-50"
+              )}>
+                <Image
+                  src={qrCodeUrl}
+                  alt={`Código QR para ${event.title}`}
+                  width={280}
+                  height={280}
+                  className="rounded-lg w-full h-auto"
+                />
+                {!event.qrValid && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Ban className="h-20 w-20 text-red-500 opacity-50" />
+                  </div>
+                )}
+              </div>
+
+              {/* Status Badge */}
+              <Badge 
+                variant={event.qrValid ? "default" : "destructive"}
+                className="text-sm px-4 py-1.5"
+              >
+                {event.qrValid ? (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    QR Válido
+                  </>
+                ) : (
+                  <>
+                    <Ban className="mr-2 h-4 w-4" />
+                    QR Invalidado
+                  </>
+                )}
+              </Badge>
+
+              {/* Info */}
+              <div className="text-xs text-muted-foreground text-center space-y-1 w-full">
+                <p className="break-all"><strong>ID:</strong> {event.id}</p>
+                <p className="break-all"><strong>Token:</strong> <code className="bg-muted px-2 py-0.5 rounded text-xs">{event.qrToken}</code></p>
+              </div>
             </div>
+          </div>
 
-            {/* Status Badge */}
-            <Badge 
-              variant={event.qrValid ? "default" : "destructive"}
-              className="text-sm px-4 py-1"
-            >
-              {event.qrValid ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  QR Válido y Activo
-                </>
-              ) : (
-                <>
-                  <Ban className="mr-2 h-4 w-4" />
-                  QR Invalidado
-                </>
-              )}
-            </Badge>
-
-            {/* Info */}
-            <div className="text-sm text-muted-foreground text-center space-y-1">
-              <p><strong>ID:</strong> {event.id}</p>
-              <p><strong>Token:</strong> <code className="bg-muted px-2 py-1 rounded">{event.qrToken}</code></p>
-            </div>
-
-            {/* Actions */}
-            <div className="grid grid-cols-2 gap-2 w-full">
+          {/* Fixed Bottom Actions */}
+          <div className="border-t px-6 py-4 bg-background space-y-3">
+            {/* Download/Print */}
+            <div className="grid grid-cols-2 gap-2">
               <Button onClick={handleDownloadQR} variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
                 Descargar
@@ -232,19 +237,21 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 w-full">
+            {/* Regenerate/Toggle */}
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() => setShowRegenerateConfirm(true)}
                 variant="secondary"
                 size="sm"
                 disabled={isRegenerating || isTogglingValidity}
+                type="button"
               >
                 {isRegenerating ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <RefreshCw className="mr-2 h-4 w-4" />
                 )}
-                Regenerar QR
+                Regenerar
               </Button>
               <Button
                 onClick={handleToggleValidity}
@@ -260,13 +267,9 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
                 ) : (
                   <CheckCircle className="mr-2 h-4 w-4" />
                 )}
-                {isTogglingValidity ? 'Procesando...' : event.qrValid ? 'Invalidar' : 'Reactivar'}
+                {isTogglingValidity ? 'Cargando...' : event.qrValid ? 'Invalidar' : 'Reactivar'}
               </Button>
             </div>
-
-            <Button onClick={() => onOpenChange(false)} variant="ghost" className="w-full">
-              Cerrar
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
