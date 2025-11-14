@@ -635,8 +635,8 @@ function ContentManagementContent() {
 
 export default function ContentManagementPage() {
   return (
-    <AdminAuthGuard>
-      <FirebaseClientProvider>
+    <FirebaseClientProvider>
+      <AdminAuthGuard>
         <SidebarProvider>
           <AdminSidebar />
           <SidebarInset>
@@ -649,7 +649,7 @@ export default function ContentManagementPage() {
             <ContentManagementContent />
           </SidebarInset>
         </SidebarProvider>
-      </FirebaseClientProvider>
-    </AdminAuthGuard>
+      </AdminAuthGuard>
+    </FirebaseClientProvider>
   );
 }
