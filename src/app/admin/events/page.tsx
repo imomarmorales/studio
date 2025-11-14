@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { EventEditDialog } from '@/components/admin/EventEditDialog';
 import { EventQrManagementDialog } from '@/components/admin/EventQrManagementDialog';
 import { EventAttendeesDialog } from '@/components/admin/EventAttendeesDialog';
@@ -285,6 +285,12 @@ function ManageEventsContent() {
        <SidebarProvider>
         <AdminSidebar />
         <SidebarInset>
+            {/* Mobile Header with Menu Trigger */}
+            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+              <SidebarTrigger className="h-10 w-10 -ml-2" />
+              <h1 className="text-lg font-semibold">Gestionar Eventos</h1>
+            </header>
+            
             <div className="space-y-6 p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <PageHeader

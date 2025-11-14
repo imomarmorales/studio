@@ -43,14 +43,14 @@ export function AppHeader() {
 
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-       <div className="md:hidden">
-         <SidebarTrigger />
-       </div>
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-2 border-b bg-background px-4 md:px-6">
+       {/* Mobile Menu Button - Always visible on small screens */}
+       <SidebarTrigger className="md:hidden h-10 w-10 -ml-2" />
+       
        <div className="hidden md:block">
         {/* Placeholder to push content */}
        </div>
-      <div className="flex w-full items-center justify-end gap-4">
+      <div className="flex w-full items-center justify-end gap-2 md:gap-4">
         {/* Mobile Logout Button - Visible only on mobile */}
         <Button 
           variant="ghost" 
@@ -58,7 +58,7 @@ export function AppHeader() {
           className="md:hidden text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={handleSignOut}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="h-4 w-4 mr-1" />
           Salir
         </Button>
         

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Mail, Trophy, User as UserIcon } from 'lucide-react';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface User {
   id: string;
@@ -219,6 +219,12 @@ export default function UsuariosPage() {
       <SidebarProvider>
         <AdminSidebar />
         <SidebarInset>
+          {/* Mobile Header with Menu Trigger */}
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+            <SidebarTrigger className="h-10 w-10 -ml-2" />
+            <h1 className="text-lg font-semibold">Usuarios Registrados</h1>
+          </header>
+          
           <UsuariosContent />
         </SidebarInset>
       </SidebarProvider>
