@@ -51,6 +51,17 @@ export function AppHeader() {
         {/* Placeholder to push content */}
        </div>
       <div className="flex w-full items-center justify-end gap-4">
+        {/* Mobile Logout Button - Visible only on mobile */}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="md:hidden text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Salir
+        </Button>
+        
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>
@@ -68,7 +79,7 @@ export function AppHeader() {
             <DropdownMenuItem asChild><Link href="/perfil">Perfil</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link href="/dashboard">Dashboard</Link></DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Cerrar Sesión</span>
             </DropdownMenuItem>

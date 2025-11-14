@@ -59,12 +59,12 @@ function PodiumSkeleton() {
 
 export default function RankingPage() {
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   // Query users with points > 0, ordered by points descending
   const usersQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
+    [firestore, user]
   );
   const { data: allUsers, isLoading, error } = useCollection<Participant>(usersQuery);
 
@@ -115,10 +115,10 @@ export default function RankingPage() {
         </Card>
       )}
 
-      {isLoading && <PodiumSkeleton />}
+      {(isLoading || isUserLoading) && <PodiumSkeleton />}
       
       {/* Top 3 Players - Desktop */}
-      {!isLoading && topPlayers.length >= 3 && (
+      {!isLoading && !isUserLoading && topPlayers.length >= 3 && (
         <div className="hidden md:grid md:grid-cols-3 gap-4 justify-items-center items-end">
           {podiumOrderDesktop.map((player, index) => {
             const rank = [2, 1, 3][index] as 1 | 2 | 3;

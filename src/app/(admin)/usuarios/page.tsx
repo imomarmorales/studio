@@ -1,6 +1,6 @@
 'use client';
 
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,10 +19,11 @@ interface User {
 
 export default function UsuariosPage() {
   const { firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
   
   const usersQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'users'), orderBy('points', 'desc')) : null),
+    [firestore, user]
   );
   
   const { data: users, isLoading: loading, error } = useCollection<User>(usersQuery);
@@ -50,7 +51,7 @@ export default function UsuariosPage() {
     }
   };
 
-  if (loading) {
+  if (isUserLoading || loading) {
     return (
       <div className="space-y-6">
         <div>

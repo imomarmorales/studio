@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
-import { RefreshCw, Ban, CheckCircle, Download, Printer, X, Loader2 } from 'lucide-react';
+import { RefreshCw, Ban, CheckCircle, Download, Printer, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { generateQRToken } from '@/lib/event-utils';
@@ -41,6 +41,7 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
   const { firestore } = useFirebase();
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isTogglingValidity, setIsTogglingValidity] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
   if (!event) return null;
@@ -109,13 +110,41 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
     }
   };
 
-  const handleDownloadQR = () => {
-    const link = document.createElement('a');
-    link.href = qrCodeUrl;
-    link.download = `QR-${event.title.replace(/\s+/g, '-')}-${event.id}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadQR = async () => {
+    setIsDownloading(true);
+    try {
+      // Fetch the QR code as a blob
+      const response = await fetch(qrCodeUrl);
+      const blob = await response.blob();
+      
+      // Create a blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `QR-${event.title.replace(/\s+/g, '-')}-${event.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast({
+        title: '✅ QR Descargado',
+        description: 'El código QR se ha guardado en tu dispositivo.',
+      });
+    } catch (error) {
+      console.error('Error downloading QR:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al descargar',
+        description: 'No se pudo descargar el código QR. Intenta de nuevo.',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handlePrintQR = () => {
@@ -162,14 +191,6 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md max-w-[95vw] max-h-[85vh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="relative px-6 pt-6 pb-4 border-b">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4 h-10 w-10 rounded-full z-50 bg-background/80 hover:bg-background"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
             <DialogTitle className="pr-12 text-lg">Gestionar QR</DialogTitle>
             <DialogDescription className="text-sm">
               {event.title}
@@ -177,10 +198,10 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-3 pb-4">
               {/* QR Code */}
               <div className={cn(
-                "border-4 p-3 rounded-lg bg-white transition-all w-full max-w-[280px]",
+                "border-4 p-3 rounded-lg bg-white transition-all w-full max-w-[280px] relative",
                 event.qrValid ? "border-green-500" : "border-red-500 opacity-50"
               )}>
                 <Image
@@ -191,7 +212,7 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
                   className="rounded-lg w-full h-auto"
                 />
                 {!event.qrValid && (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <Ban className="h-20 w-20 text-red-500 opacity-50" />
                   </div>
                 )}
@@ -224,14 +245,31 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
           </div>
 
           {/* Fixed Bottom Actions */}
-          <div className="border-t px-6 py-4 bg-background space-y-3">
+          <div className="border-t px-6 py-4 bg-background space-y-3 relative z-10">
             {/* Download/Print */}
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={handleDownloadQR} variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Descargar
+              <Button 
+                onClick={handleDownloadQR} 
+                variant="outline" 
+                size="sm"
+                type="button"
+                className="relative z-20"
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {isDownloading ? 'Descargando...' : 'Descargar'}
               </Button>
-              <Button onClick={handlePrintQR} variant="outline" size="sm">
+              <Button 
+                onClick={handlePrintQR} 
+                variant="outline" 
+                size="sm"
+                type="button"
+                className="relative z-20"
+              >
                 <Printer className="mr-2 h-4 w-4" />
                 Imprimir
               </Button>
@@ -245,6 +283,7 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
                 size="sm"
                 disabled={isRegenerating || isTogglingValidity}
                 type="button"
+                className="relative z-20"
               >
                 {isRegenerating ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -259,6 +298,7 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
                 size="sm"
                 disabled={isRegenerating || isTogglingValidity}
                 type="button"
+                className="relative z-20"
               >
                 {isTogglingValidity ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
