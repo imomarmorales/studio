@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Users, Home, LogOut, Calendar, X } from 'lucide-react';
+import { Shield, Users, Home, LogOut, Calendar, X, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/shared/Logo';
 import { useAuth } from '@/firebase';
@@ -23,6 +23,7 @@ import { usePathname } from 'next/navigation';
 const menuItems = [
     { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
     { href: '/admin/usuarios', label: 'Usuarios Registrados', icon: Users },
+    { href: '/admin/content', label: 'Contenido Principal', icon: Layers },
 ]
 
 export function AdminSidebar() {
