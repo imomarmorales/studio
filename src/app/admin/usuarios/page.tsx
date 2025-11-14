@@ -153,16 +153,16 @@ function UsuariosContent() {
               <p>No hay usuarios registrados aún.</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[60px]">#</TableHead>
-                    <TableHead>Usuario</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Puntos</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Fecha de Registro</TableHead>
+                    <TableHead className="min-w-[200px]">Usuario</TableHead>
+                    <TableHead className="min-w-[250px]">Email</TableHead>
+                    <TableHead className="text-center min-w-[100px]">Puntos</TableHead>
+                    <TableHead className="min-w-[100px]">Rol</TableHead>
+                    <TableHead className="min-w-[150px]">Fecha de Registro</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -184,7 +184,7 @@ function UsuariosContent() {
                       <TableCell>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Mail className="h-4 w-4" />
-                          {user.email}
+                          <span className="truncate max-w-[200px]">{user.email}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

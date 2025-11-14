@@ -8,10 +8,12 @@ import {
   Newspaper,
   User,
   Medal,
-  Dumbbell
+  Dumbbell,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/shared/Logo';
+import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +22,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/firebase';
@@ -39,6 +42,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const auth = useAuth();
   const router = useRouter();
+  const { toggleSidebar, isMobile } = useSidebar();
 
   const handleSignOut = async () => {
     if (auth) {
@@ -49,11 +53,22 @@ export function AppSidebar() {
 
 
   return (
-    <Sidebar collapsible="icon" aria-label="Navegación Principal">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" aria-label="Navegación Principal" className="overflow-hidden">
+      <SidebarHeader className="relative">
         <Logo />
+        {/* Close Button - Only visible on mobile */}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-8 w-8 md:hidden"
+            onClick={toggleSidebar}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="overflow-y-auto">
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
@@ -67,7 +82,7 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 

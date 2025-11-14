@@ -1,12 +1,13 @@
 'use client';
 
-import { Shield, Users, Home, LogOut, Calendar } from 'lucide-react';
+import { Shield, Users, Home, LogOut, Calendar, X } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/shared/Logo';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 
@@ -28,6 +30,7 @@ export function AdminSidebar() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { toggleSidebar, isMobile } = useSidebar();
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -50,11 +53,22 @@ export function AdminSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" aria-label="Navegación de Administrador">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" aria-label="Navegación de Administrador" className="overflow-hidden">
+      <SidebarHeader className="relative">
         <Logo />
+        {/* Close Button - Only visible on mobile */}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-8 w-8 md:hidden"
+            onClick={toggleSidebar}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="overflow-y-auto">
         <SidebarMenu>
             {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -68,7 +82,7 @@ export function AdminSidebar() {
             ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
               <SidebarMenuButton 
