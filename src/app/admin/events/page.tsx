@@ -56,7 +56,12 @@ const formSchema = z.object({
   imageFile: z.any().optional(),
 }).refine((data) => {
   if (data.endTime && data.startTime) {
-    return data.endTime > data.startTime;
+    // Convertir strings HH:mm a minutos para comparar
+    const [startH, startM] = data.startTime.split(':').map(Number);
+    const [endH, endM] = data.endTime.split(':').map(Number);
+    const startTotalMinutes = startH * 60 + startM;
+    const endTotalMinutes = endH * 60 + endM;
+    return endTotalMinutes > startTotalMinutes;
   }
   return true;
 }, {
@@ -180,11 +185,16 @@ function ManageEventsContent() {
       const qrToken = generateQRToken(12);
       const speakers = data.speakers ? data.speakers.split(',').map(s => s.trim()).filter(Boolean) : [];
       
-      // Upload image if provided
+      // Upload image if provided, otherwise use placeholder
       let imageUrl = `https://picsum.photos/seed/${Date.now()}/800/400`;
       if (data.imageFile) {
-        const fileName = generateUniqueFileName(data.imageFile.name);
-        imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
+        try {
+          const fileName = generateUniqueFileName(data.imageFile.name);
+          imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
+        } catch (uploadError) {
+          console.warn('Error uploading image, using placeholder:', uploadError);
+          // Continuar con placeholder si falla el upload
+        }
       }
 
       // Combine date with start time

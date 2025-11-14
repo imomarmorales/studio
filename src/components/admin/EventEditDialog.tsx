@@ -54,7 +54,12 @@ const formSchema = z.object({
   imageFile: z.any().optional(),
 }).refine((data) => {
   if (data.endTime && data.startTime) {
-    return data.endTime > data.startTime;
+    // Convertir strings HH:mm a minutos para comparar
+    const [startH, startM] = data.startTime.split(':').map(Number);
+    const [endH, endM] = data.endTime.split(':').map(Number);
+    const startTotalMinutes = startH * 60 + startM;
+    const endTotalMinutes = endH * 60 + endM;
+    return endTotalMinutes > startTotalMinutes;
   }
   return true;
 }, {
@@ -155,11 +160,16 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
     try {
       const speakers = data.speakers ? data.speakers.split(',').map(s => s.trim()).filter(Boolean) : [];
       
-      // Upload new image if provided
+      // Upload new image if provided, keep existing if not
       let imageUrl = event.imageUrl;
       if (data.imageFile) {
-        const fileName = generateUniqueFileName(data.imageFile.name);
-        imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
+        try {
+          const fileName = generateUniqueFileName(data.imageFile.name);
+          imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
+        } catch (uploadError) {
+          console.warn('Error uploading image, keeping existing:', uploadError);
+          // Mantener la imagen existente si falla el upload
+        }
       }
 
       // Combine date with start time
