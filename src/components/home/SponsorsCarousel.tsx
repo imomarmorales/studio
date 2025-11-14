@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Sponsor {
   id: string;
@@ -11,6 +11,8 @@ interface Sponsor {
 }
 
 export function SponsorsCarousel() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
   // Default sponsors (shows always on public page) - Using base64 SVG
   const defaultSponsors = [
     { name: 'TechCorp', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzQzMzhjYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5UZWNoQ29ycDwvdGV4dD48L3N2Zz4=' },
@@ -20,6 +22,25 @@ export function SponsorsCarousel() {
     { name: 'CloudNine', logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzA1OTY2OSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DbG91ZE5pbmU8L3RleHQ+PC9zdmc+' },
   ];
 
+  // Triplicar para efecto infinito
+  const tripleSponsors = [...defaultSponsors, ...defaultSponsors, ...defaultSponsors];
+
+  // Auto-scroll cada 3 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => {
+        const nextIndex = prev + 1;
+        // Resetear al inicio cuando llega al segundo set
+        if (nextIndex >= defaultSponsors.length) {
+          return 0;
+        }
+        return nextIndex;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [defaultSponsors.length]);
+
   return (
     <div className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -27,21 +48,26 @@ export function SponsorsCarousel() {
           Nuestros Patrocinadores
         </h2>
         <div className="relative overflow-hidden">
-          <div className="flex items-center justify-center gap-8 md:gap-16">
-            {defaultSponsors.map((sponsor, index) => (
+          <div 
+            className="flex items-center gap-8 md:gap-16 transition-transform duration-700 ease-in-out"
+            style={{ transform: `translateX(-${currentIndex * (100 / defaultSponsors.length)}%)` }}
+          >
+            {tripleSponsors.map((sponsor, index) => (
               <div
                 key={index}
                 className="flex-shrink-0 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100"
+                style={{ minWidth: `${100 / defaultSponsors.length}%` }}
               >
-                <Image
-                  src={sponsor.logo}
-                  alt={sponsor.name}
-                  width={200}
-                  height={100}
-                  className="object-contain h-16 w-auto"
-                  unoptimized
-                />
-                />
+                <div className="flex items-center justify-center h-24">
+                  <Image
+                    src={sponsor.logo}
+                    alt={sponsor.name}
+                    width={200}
+                    height={100}
+                    className="object-contain h-16 w-auto max-w-full"
+                    unoptimized
+                  />
+                </div>
               </div>
             ))}
           </div>

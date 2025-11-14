@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -104,9 +105,11 @@ export function FeaturedEvents() {
                   {event.description}
                 </p>
 
-                <Button className="w-full" size="lg">
-                  Más Información
-                </Button>
+                <Link href="/registro">
+                  <Button className="w-full" size="lg">
+                    Más Información
+                  </Button>
+                </Link>
               </div>
             </div>
           ))}
