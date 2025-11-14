@@ -89,6 +89,26 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
     resolver: zodResolver(formSchema),
   });
 
+  // Watch form values for duration calculation (must be before useEffect)
+  const eventDate = form.watch('eventDate');
+  const startTime = form.watch('startTime');
+  const endTime = form.watch('endTime');
+  
+  const calculatedDuration = React.useMemo(() => {
+    if (!eventDate || !startTime || !endTime) return null;
+    
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    
+    const start = new Date(eventDate);
+    start.setHours(startHours, startMinutes, 0, 0);
+    
+    const end = new Date(eventDate);
+    end.setHours(endHours, endMinutes, 0, 0);
+    
+    return calculateDuration(start, end);
+  }, [eventDate, startTime, endTime]);
+
   useEffect(() => {
     if (event) {
       const eventDateTime = new Date(event.dateTime);
@@ -249,25 +269,6 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
   };
 
   if (!event) return null;
-
-  const eventDate = form.watch('eventDate');
-  const startTime = form.watch('startTime');
-  const endTime = form.watch('endTime');
-  
-  const calculatedDuration = React.useMemo(() => {
-    if (!eventDate || !startTime || !endTime) return null;
-    
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    
-    const start = new Date(eventDate);
-    start.setHours(startHours, startMinutes, 0, 0);
-    
-    const end = new Date(eventDate);
-    end.setHours(endHours, endMinutes, 0, 0);
-    
-    return calculateDuration(start, end);
-  }, [eventDate, startTime, endTime]);
 
   return (
     <>
