@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -390,7 +391,11 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                     <FormItem>
                       <FormLabel>Hora de Inicio</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} className="w-full" />
+                        <TimeSelect 
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Hora de inicio"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -404,7 +409,11 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                     <FormItem>
                       <FormLabel>Hora de Fin</FormLabel>
                       <FormControl>
-                        <Input type="time" {...field} className="w-full" />
+                        <TimeSelect 
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Hora de fin"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -434,14 +435,14 @@ function ManageEventsContent() {
                               <FormItem>
                                 <FormLabel>Hora de Inicio *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="time" 
-                                    {...field}
-                                    className="w-full"
+                                  <TimeSelect 
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar hora de inicio"
                                   />
                                 </FormControl>
                                 <FormDescription className="text-xs">
-                                  Hora de inicio del evento
+                                  Selecciona hora y minutos con AM/PM
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -455,14 +456,14 @@ function ManageEventsContent() {
                               <FormItem>
                                 <FormLabel>Hora de Fin</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="time" 
-                                    {...field}
-                                    className="w-full"
+                                  <TimeSelect 
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Seleccionar hora de fin"
                                   />
                                 </FormControl>
                                 <FormDescription className="text-xs">
-                                  Hora de finalización (opcional)
+                                  Selecciona hora de finalización (opcional)
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
