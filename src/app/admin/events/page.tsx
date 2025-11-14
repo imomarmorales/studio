@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -45,21 +45,22 @@ import {
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
-  dateTime: z.date({ required_error: 'La fecha y hora de inicio son requeridas.' }),
-  endDateTime: z.date().optional(),
+  eventDate: z.date({ required_error: 'La fecha del evento es requerida.' }),
+  startTime: z.string().min(1, 'La hora de inicio es requerida.'),
+  endTime: z.string().optional(),
   location: z.string().min(3, 'La ubicación es requerida.'),
   pointsPerAttendance: z.number().min(1, 'Los puntos deben ser al menos 1.').default(100),
   speakers: z.string().optional(),
   attendanceRules: z.string().optional(),
   imageFile: z.any().optional(),
 }).refine((data) => {
-  if (data.endDateTime && data.dateTime) {
-    return data.endDateTime > data.dateTime;
+  if (data.endTime && data.startTime) {
+    return data.endTime > data.startTime;
   }
   return true;
 }, {
-  message: 'La fecha de fin debe ser posterior a la fecha de inicio',
-  path: ['endDateTime'],
+  message: 'La hora de fin debe ser posterior a la hora de inicio',
+  path: ['endTime'],
 });
 
 type EventFormValues = z.infer<typeof formSchema>;
@@ -125,6 +126,8 @@ function ManageEventsContent() {
       pointsPerAttendance: 100,
       speakers: '',
       attendanceRules: '',
+      startTime: '',
+      endTime: '',
     },
   });
 
@@ -183,17 +186,26 @@ function ManageEventsContent() {
         imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
       }
 
-      // Calculate duration
+      // Combine date with start time
+      const [startHours, startMinutes] = data.startTime.split(':').map(Number);
+      const startDateTime = new Date(data.eventDate);
+      startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+      // Combine date with end time if provided
+      let endDateTime: Date | undefined;
       let duration: string | undefined;
-      if (data.endDateTime) {
-        duration = calculateDuration(data.dateTime, data.endDateTime);
+      if (data.endTime) {
+        const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+        endDateTime = new Date(data.eventDate);
+        endDateTime.setHours(endHours, endMinutes, 0, 0);
+        duration = calculateDuration(startDateTime, endDateTime);
       }
       
       const newEvent: Omit<CongressEvent, 'id'> = {
         title: data.title,
         description: data.description,
-        dateTime: data.dateTime.toISOString(),
-        endDateTime: data.endDateTime?.toISOString(),
+        dateTime: startDateTime.toISOString(),
+        endDateTime: endDateTime?.toISOString(),
         location: data.location,
         imageUrl: imageUrl,
         pointsPerAttendance: data.pointsPerAttendance || 100,
@@ -227,9 +239,24 @@ function ManageEventsContent() {
     }
   };
 
-  const startDateTime = form.watch('dateTime');
-  const endDateTime = form.watch('endDateTime');
-  const calculatedDuration = startDateTime && endDateTime ? calculateDuration(startDateTime, endDateTime) : null;
+  const eventDate = form.watch('eventDate');
+  const startTime = form.watch('startTime');
+  const endTime = form.watch('endTime');
+  
+  const calculatedDuration = React.useMemo(() => {
+    if (!eventDate || !startTime || !endTime) return null;
+    
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    
+    const start = new Date(eventDate);
+    start.setHours(startHours, startMinutes, 0, 0);
+    
+    const end = new Date(eventDate);
+    end.setHours(endHours, endMinutes, 0, 0);
+    
+    return calculateDuration(start, end);
+  }, [eventDate, startTime, endTime]);
 
   return (
     <AdminAuthGuard>
@@ -359,42 +386,63 @@ function ManageEventsContent() {
                           )}
                         />
 
+                        <FormField
+                          control={form.control}
+                          name="eventDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Fecha del Evento *</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "dd/MM/yyyy")
+                                      ) : (
+                                        <span>Seleccionar fecha</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => date < new Date()}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
-                            name="dateTime"
+                            name="startTime"
                             render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha/Hora Inicio *</FormLabel>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <FormControl>
-                                      <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                          "w-full pl-3 text-left font-normal",
-                                          !field.value && "text-muted-foreground"
-                                        )}
-                                      >
-                                        {field.value ? (
-                                          format(field.value, "dd/MM/yy HH:mm")
-                                        ) : (
-                                          <span>Seleccionar</span>
-                                        )}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                      </Button>
-                                    </FormControl>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={field.onChange}
-                                      disabled={(date) => date < new Date()}
-                                      initialFocus
-                                    />
-                                  </PopoverContent>
-                                </Popover>
+                              <FormItem>
+                                <FormLabel>Hora de Inicio *</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="time" 
+                                    {...field}
+                                    className="w-full"
+                                  />
+                                </FormControl>
+                                <FormDescription className="text-xs">
+                                  Hora de inicio del evento
+                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -402,39 +450,20 @@ function ManageEventsContent() {
 
                           <FormField
                             control={form.control}
-                            name="endDateTime"
+                            name="endTime"
                             render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha/Hora Fin</FormLabel>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <FormControl>
-                                      <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                          "w-full pl-3 text-left font-normal",
-                                          !field.value && "text-muted-foreground"
-                                        )}
-                                      >
-                                        {field.value ? (
-                                          format(field.value, "dd/MM/yy HH:mm")
-                                        ) : (
-                                          <span>Opcional</span>
-                                        )}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                      </Button>
-                                    </FormControl>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={field.onChange}
-                                      disabled={(date) => date < new Date()}
-                                      initialFocus
-                                    />
-                                  </PopoverContent>
-                                </Popover>
+                              <FormItem>
+                                <FormLabel>Hora de Fin</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="time" 
+                                    {...field}
+                                    className="w-full"
+                                  />
+                                </FormControl>
+                                <FormDescription className="text-xs">
+                                  Hora de finalización (opcional)
+                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
