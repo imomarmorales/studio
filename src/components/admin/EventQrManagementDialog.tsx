@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
-import { RefreshCw, Ban, CheckCircle, Download, Printer, X } from 'lucide-react';
+import { RefreshCw, Ban, CheckCircle, Download, Printer, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { generateQRToken } from '@/lib/event-utils';
@@ -161,11 +161,11 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader className="relative">
+          <DialogHeader className="relative pr-8">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-0 h-8 w-8 rounded-full"
+              className="absolute right-0 top-0 h-8 w-8 rounded-full z-50"
               onClick={() => onOpenChange(false)}
             >
               <X className="h-4 w-4" />
@@ -239,7 +239,11 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
                 size="sm"
                 disabled={isRegenerating || isTogglingValidity}
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
+                {isRegenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
                 Regenerar QR
               </Button>
               <Button
@@ -247,18 +251,16 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
                 variant={event.qrValid ? "destructive" : "default"}
                 size="sm"
                 disabled={isRegenerating || isTogglingValidity}
+                type="button"
               >
-                {event.qrValid ? (
-                  <>
-                    <Ban className="mr-2 h-4 w-4" />
-                    Invalidar
-                  </>
+                {isTogglingValidity ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : event.qrValid ? (
+                  <Ban className="mr-2 h-4 w-4" />
                 ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Reactivar
-                  </>
+                  <CheckCircle className="mr-2 h-4 w-4" />
                 )}
+                {isTogglingValidity ? 'Procesando...' : event.qrValid ? 'Invalidar' : 'Reactivar'}
               </Button>
             </div>
 
