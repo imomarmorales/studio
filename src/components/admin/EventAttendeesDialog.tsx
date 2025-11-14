@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import type { CongressEvent, Participant } from '@/lib/types';
-import { Users, Download, Loader2 } from 'lucide-react';
+import { Users, Download, Loader2, X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -113,7 +113,15 @@ export function EventAttendeesDialog({ event, isOpen, onOpenChange }: EventAtten
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 top-0 h-8 w-8 rounded-full"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Asistentes: {event.title}

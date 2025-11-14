@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { Calendar, MapPin, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Ticket, X } from 'lucide-react';
 import type { CongressEvent } from '@/lib/types';
 
 interface EventDetailsDialogProps {
@@ -26,7 +26,15 @@ export function EventDetailsDialog({ event, isOpen, onOpenChange, onMarkAttendan
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px]">
-        <DialogHeader className="space-y-4">
+        <DialogHeader className="space-y-4 relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 top-0 h-8 w-8 rounded-full z-10"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
           <div className="relative w-full h-48 rounded-t-lg overflow-hidden">
             <Image
               src={event.imageUrl || `https://picsum.photos/seed/${event.id}/600/400`}

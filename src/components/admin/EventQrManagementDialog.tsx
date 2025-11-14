@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
-import { RefreshCw, Ban, CheckCircle, Download, Printer } from 'lucide-react';
+import { RefreshCw, Ban, CheckCircle, Download, Printer, X } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { generateQRToken } from '@/lib/event-utils';
@@ -161,7 +161,15 @@ export function EventQrManagementDialog({ event, isOpen, onOpenChange, onEventUp
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+          <DialogHeader className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 h-8 w-8 rounded-full"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
             <DialogTitle>Gestionar QR: {event.title}</DialogTitle>
             <DialogDescription>
               Descarga, imprime, regenera o invalida el código QR del evento.

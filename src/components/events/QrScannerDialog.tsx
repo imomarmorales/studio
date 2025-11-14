@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Camera, CheckCircle2 } from 'lucide-react';
+import { Camera, CheckCircle2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -123,7 +124,15 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader>
+        <DialogHeader className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 top-0 h-8 w-8 rounded-full"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
           <DialogTitle>Escanear Código QR</DialogTitle>
           <DialogDescription>
             Apunta tu cámara al código QR del evento para marcar tu asistencia.

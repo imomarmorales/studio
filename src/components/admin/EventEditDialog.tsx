@@ -274,7 +274,15 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 h-8 w-8 rounded-full"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
             <DialogTitle>Editar Evento</DialogTitle>
             <DialogDescription>
               Modifica los detalles del evento. Los cambios se aplicarán inmediatamente.
