@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { calculateDuration } from '@/lib/event-utils';
-import { uploadImage, generateUniqueFileName, validateImageFile } from '@/lib/upload-image';
+import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import {
   Dialog,
   DialogContent,
@@ -160,15 +160,15 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
     try {
       const speakers = data.speakers ? data.speakers.split(',').map(s => s.trim()).filter(Boolean) : [];
       
-      // Upload new image if provided, keep existing if not
+      // Convert new image to Base64 if provided, keep existing if not
       let imageUrl = event.imageUrl;
       if (data.imageFile) {
         try {
-          const fileName = generateUniqueFileName(data.imageFile.name);
-          imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
-        } catch (uploadError) {
-          console.warn('Error uploading image, keeping existing:', uploadError);
-          // Mantener la imagen existente si falla el upload
+          const compressedFile = await compressImageIfNeeded(data.imageFile, 500);
+          imageUrl = await convertImageToBase64(compressedFile);
+        } catch (error) {
+          console.warn('Error procesando imagen, manteniendo anterior:', error);
+          // Mantener la imagen existente si falla
         }
       }
 
@@ -423,6 +423,7 @@ export function EventEditDialog({ event, isOpen, onOpenChange, onEventUpdated }:
                           value={field.value}
                           onChange={field.onChange}
                           placeholder="Hora de fin"
+                          minTime={startTime}
                         />
                       </FormControl>
                       <FormMessage />

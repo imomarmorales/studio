@@ -14,9 +14,10 @@ interface TimeSelectProps {
   value?: string; // Formato "HH:mm" en 24h
   onChange?: (value: string) => void;
   placeholder?: string;
+  minTime?: string; // Hora mínima permitida en formato "HH:mm" 24h
 }
 
-export function TimeSelect({ value, onChange, placeholder = "Seleccionar hora" }: TimeSelectProps) {
+export function TimeSelect({ value, onChange, placeholder = "Seleccionar hora", minTime }: TimeSelectProps) {
   // Convertir de 24h a 12h para mostrar
   const convert24to12 = (time24: string) => {
     if (!time24) return { hour: "", minute: "", period: "AM" };
@@ -67,8 +68,32 @@ export function TimeSelect({ value, onChange, placeholder = "Seleccionar hora" }
     }
   }, [hour, minute, period]);
 
-  const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
-  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+  // Generar opciones de hora filtradas por minTime
+  const getAvailableHours = React.useMemo(() => {
+    const allHours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+    
+    if (!minTime) return allHours;
+    
+    // Convertir minTime a formato comparable
+    const minTimeParts = convert24to12(minTime);
+    const minHour24 = minTime.split(':').map(Number)[0];
+    const minMinute = minTime.split(':').map(Number)[1];
+    
+    // Filtrar horas basado en el período AM/PM actual
+    return allHours.filter((h) => {
+      const currentTime24 = convert12to24(h, minute || '00', period);
+      if (!currentTime24) return true;
+      
+      const [currentHour, currentMinute] = currentTime24.split(':').map(Number);
+      const currentTotalMinutes = currentHour * 60 + currentMinute;
+      const minTotalMinutes = minHour24 * 60 + minMinute;
+      
+      return currentTotalMinutes > minTotalMinutes;
+    });
+  }, [minTime, period, minute]);
+
+  // Generar opciones de minutos (cada 5 minutos para mejor UX)
+  const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
 
   return (
     <div className="flex gap-2 items-center">
@@ -80,8 +105,8 @@ export function TimeSelect({ value, onChange, placeholder = "Seleccionar hora" }
               {hour || <span className="text-muted-foreground">Hora</span>}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
-            {hours.map((h) => (
+          <SelectContent className="max-h-[200px]">
+            {getAvailableHours.map((h) => (
               <SelectItem key={h} value={h}>
                 {h}
               </SelectItem>

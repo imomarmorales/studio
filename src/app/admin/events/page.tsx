@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { generateQRToken } from '@/lib/event-utils';
 import { calculateDuration } from '@/lib/event-utils';
-import { uploadImage, generateUniqueFileName, validateImageFile } from '@/lib/upload-image';
+import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -185,15 +185,20 @@ function ManageEventsContent() {
       const qrToken = generateQRToken(12);
       const speakers = data.speakers ? data.speakers.split(',').map(s => s.trim()).filter(Boolean) : [];
       
-      // Upload image if provided, otherwise use placeholder
+      // Convert image to Base64 if provided, otherwise use placeholder
       let imageUrl = `https://picsum.photos/seed/${Date.now()}/800/400`;
       if (data.imageFile) {
         try {
-          const fileName = generateUniqueFileName(data.imageFile.name);
-          imageUrl = await uploadImage(data.imageFile, `events/${fileName}`);
-        } catch (uploadError) {
-          console.warn('Error uploading image, using placeholder:', uploadError);
-          // Continuar con placeholder si falla el upload
+          // Comprimir si es necesario y convertir a Base64
+          const compressedFile = await compressImageIfNeeded(data.imageFile, 500);
+          imageUrl = await convertImageToBase64(compressedFile);
+        } catch (error) {
+          console.warn('Error procesando imagen, usando placeholder:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error con la imagen',
+            description: 'No se pudo procesar la imagen. Se usará una imagen predeterminada.',
+          });
         }
       }
 
@@ -470,10 +475,11 @@ function ManageEventsContent() {
                                     value={field.value}
                                     onChange={field.onChange}
                                     placeholder="Seleccionar hora de fin"
+                                    minTime={startTime}
                                   />
                                 </FormControl>
                                 <FormDescription className="text-xs">
-                                  Selecciona hora de finalización (opcional)
+                                  Debe ser posterior a la hora de inicio
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
