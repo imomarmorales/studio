@@ -80,7 +80,7 @@ export function SponsorsCarousel() {
         </h2>
         <div className="relative overflow-hidden">
           <div 
-            className="flex items-center gap-4 md:gap-8 transition-transform duration-700 ease-in-out"
+            className="flex items-center gap-2 md:gap-4 transition-transform duration-700 ease-in-out"
             style={{ transform: `translateX(-${currentIndex * (100 / sponsors.length)}%)` }}
           >
             {tripleSponsors.map((sponsor, index) => (
