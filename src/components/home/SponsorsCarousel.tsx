@@ -80,13 +80,13 @@ export function SponsorsCarousel() {
         </h2>
         <div className="relative overflow-hidden">
           <div 
-            className="flex items-center gap-8 md:gap-16 transition-transform duration-700 ease-in-out"
+            className="flex items-center gap-4 md:gap-8 transition-transform duration-700 ease-in-out"
             style={{ transform: `translateX(-${currentIndex * (100 / sponsors.length)}%)` }}
           >
             {tripleSponsors.map((sponsor, index) => (
               <div
                 key={`${sponsor.id}-${index}`}
-                className="flex-shrink-0 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100"
+                className="flex-shrink-0 transition-all duration-300 hover:scale-110"
                 style={{ minWidth: `${100 / sponsors.length}%` }}
               >
                 <div className="flex items-center justify-center h-24">
@@ -95,7 +95,7 @@ export function SponsorsCarousel() {
                     alt={sponsor.name}
                     width={200}
                     height={100}
-                    className="object-contain h-16 w-auto max-w-full"
+                    className="object-contain h-20 w-auto max-w-full"
                     unoptimized
                   />
                 </div>
