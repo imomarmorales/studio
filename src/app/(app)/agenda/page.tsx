@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCollection, useFirebase, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Bell, X } from 'lucide-react';
+import { AlertTriangle, Bell, X, Calendar as CalendarIcon, Grid3x3, List } from 'lucide-react';
 import { EventDetailsDialog } from '@/components/events/EventDetailsDialog';
 import { QrScannerDialog } from '@/components/events/QrScannerDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,8 @@ import { getEventStatus, canMarkAttendance, decodeEventQR } from '@/lib/event-ut
 import { Button } from '@/components/ui/button';
 import { EventTimeline } from '@/components/events/EventTimeline';
 import { checkAndAwardBadges } from '@/lib/badges';
+import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, addDays, subDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 function EventCardSkeleton() {
   return (
@@ -44,7 +46,8 @@ export default function AgendaPage() {
   const [filterTab, setFilterTab] = useState<'all' | 'in-progress' | 'upcoming'>('all');
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
+  const [viewMode, setViewMode] = useState<'calendar' | 'grid' | 'timeline'>('calendar');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const eventsQuery = useMemoFirebase(
     () => {
@@ -376,18 +379,21 @@ export default function AgendaPage() {
       {/* View Mode Tabs */}
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)} className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <TabsList className="grid w-full sm:w-auto grid-cols-2">
+          <TabsList className="grid w-full sm:w-auto grid-cols-3">
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendario</span>
+              <span className="sm:hidden">Cal</span>
+            </TabsTrigger>
             <TabsTrigger value="grid" className="gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              Tarjetas
+              <Grid3x3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Tarjetas</span>
+              <span className="sm:hidden">Grid</span>
             </TabsTrigger>
             <TabsTrigger value="timeline" className="gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Cronograma
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Cronograma</span>
+              <span className="sm:hidden">Lista</span>
             </TabsTrigger>
           </TabsList>
 
@@ -417,6 +423,116 @@ export default function AgendaPage() {
             </TabsList>
           </Tabs>
         </div>
+
+        {/* Calendar View */}
+        <TabsContent value="calendar" className="space-y-6 mt-0">
+          {isLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className="h-64 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+              {/* Week Days */}
+              {(() => {
+                const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+                const weekDays = eachDayOfInterval({
+                  start: weekStart,
+                  end: endOfWeek(selectedDate, { weekStartsOn: 1 })
+                });
+
+                return weekDays.map((day) => {
+                  const dayEvents = (filteredEvents || []).filter(event =>
+                    isSameDay(new Date(event.dateTime), day)
+                  ).sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+
+                  const isToday = isSameDay(day, new Date());
+                  const isSelected = isSameDay(day, selectedDate);
+
+                  return (
+                    <Card
+                      key={day.toISOString()}
+                      className={`cursor-pointer transition-all hover:shadow-lg ${
+                        isToday ? 'border-primary border-2' : ''
+                      } ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => setSelectedDate(day)}
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium text-center">
+                          <div className={`${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                            {format(day, 'EEE', { locale: es })}
+                          </div>
+                          <div className={`text-2xl mt-1 ${isToday ? 'bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center mx-auto' : ''}`}>
+                            {format(day, 'd')}
+                          </div>
+                          {isToday && (
+                            <div className="text-xs text-primary mt-1">Hoy</div>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {dayEvents.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-4">
+                            Sin eventos
+                          </p>
+                        ) : (
+                          dayEvents.map((event) => {
+                            const status = getEventStatus(event);
+                            return (
+                              <div
+                                key={event.id}
+                                className={`p-2 rounded-md text-xs border cursor-pointer hover:shadow-md transition-all ${
+                                  status === 'in-progress'
+                                    ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                                    : status === 'upcoming'
+                                    ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                                    : 'bg-muted/50 border-border'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(event);
+                                }}
+                              >
+                                <div className="font-semibold line-clamp-2 mb-1">{event.title}</div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  {status === 'in-progress' && <span className="animate-pulse">🔴</span>}
+                                  {format(new Date(event.dateTime), 'HH:mm', { locale: es })}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              })()}
+            </div>
+          )}
+          
+          {/* Navigation Buttons */}
+          <div className="flex justify-center gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedDate(subDays(selectedDate, 7))}
+            >
+              ← Semana Anterior
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedDate(new Date())}
+            >
+              Hoy
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+            >
+              Siguiente Semana →
+            </Button>
+          </div>
+        </TabsContent>
 
         {/* Grid View */}
         <TabsContent value="grid" className="space-y-6 mt-0">
