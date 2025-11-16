@@ -12,48 +12,49 @@ import { useUser } from './auth/use-user';
 import { useCollection } from './firestore/use-collection';
 import { useDoc } from './firestore/use-doc';
 
-// Initializes and returns a Firebase app instance.
-function initializeFirebase(): {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-  storage: FirebaseStorage;
-} {
-  const isConfigured = getApps().length > 0;
-  const firebaseApp = isConfigured ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(firebaseApp);
-  const firestore = getFirestore(firebaseApp);
-  const storage = getStorage(firebaseApp);
+// One-time initialization of the Firebase app
+let firebaseApp: FirebaseApp;
+let auth: Auth;
+let firestore: Firestore;
+let storage: FirebaseStorage;
 
-  // NOTE: Emulator connection should only be used in development.
-  if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
-    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
-    
-    // Connect Auth emulator
-    try {
-      connectAuthEmulator(auth, `http://${host}:9099`, {
-        disableWarnings: true,
-      });
-    } catch (error) {
-      // Emulator already connected, ignore error
-    }
+if (getApps().length > 0) {
+  firebaseApp = getApp();
+} else {
+  firebaseApp = initializeApp(firebaseConfig);
+}
 
-    // Connect Firestore emulator
-    try {
-      connectFirestoreEmulator(firestore, host, 8080);
-    } catch (error) {
-      // Emulator already connected, ignore error
-    }
+auth = getAuth(firebaseApp);
+firestore = getFirestore(firebaseApp);
+storage = getStorage(firebaseApp);
 
-    // Connect Storage emulator
-    try {
-      connectStorageEmulator(storage, host, 9199);
-    } catch (error) {
-      // Emulator already connected, ignore error
-    }
+
+// NOTE: Emulator connection should only be used in development.
+if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
+  const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
+  
+  // Connect Auth emulator
+  try {
+    connectAuthEmulator(auth, `http://${host}:9099`, {
+      disableWarnings: true,
+    });
+  } catch (error) {
+    // Emulator already connected, ignore error
   }
 
-  return { firebaseApp, auth, firestore, storage };
+  // Connect Firestore emulator
+  try {
+    connectFirestoreEmulator(firestore, host, 8080);
+  } catch (error) {
+    // Emulator already connected, ignore error
+  }
+
+  // Connect Storage emulator
+  try {
+    connectStorageEmulator(storage, host, 9199);
+  } catch (error) {
+    // Emulator already connected, ignore error
+  }
 }
 
 // Custom hook to memoize Firebase references and queries.
@@ -73,9 +74,11 @@ function useMemoFirebase<T>(factory: () => T | null, deps: React.DependencyList)
 }
 
 export {
-  initializeFirebase,
+  firebaseApp,
+  auth,
+  firestore,
+  storage,
   FirebaseProvider,
-  FirebaseClientProvider,
   useUser,
   useCollection,
   useDoc,
