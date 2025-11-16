@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCollection, useFirebase, useUser, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, runTransaction, getDoc } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -211,25 +211,29 @@ export default function AgendaPage() {
     const userRef = doc(firestore, 'users', user.uid);
 
     try {
+        // Verificar primero si ya existe asistencia (antes de la transacción)
+        const attendanceDocId = `${user.uid}_${eventForAttendance.id}`;
+        const attendanceDocRef = doc(attendanceRef, attendanceDocId);
+        const existingAttendanceCheck = await getDoc(attendanceDocRef);
+        
+        if (existingAttendanceCheck.exists()) {
+            // Mostrar mensaje amigable sin error
+            toast({
+                title: 'Asistencia Ya Registrada ✓',
+                description: 'Tu asistencia para este evento ya fue registrada anteriormente.',
+                duration: 5000,
+            });
+            return; // Salir sin error
+        }
+
         let newAttendanceCount = 0;
         
         await runTransaction(firestore, async (transaction) => {
-            const attendanceDocId = `${user.uid}_${eventForAttendance.id}`;
-            const attendanceDocRef = doc(attendanceRef, attendanceDocId);
-            
-            // ⚠️ TODAS LAS LECTURAS PRIMERO (antes de cualquier escritura)
-            // 1. Check if attendance already exists
-            const existingAttendance = await transaction.get(attendanceDocRef);
-            
-            // 2. Read user document
+            // ⚠️ TODAS LAS LECTURAS PRIMERO
+            // 1. Read user document
             const userDoc = await transaction.get(userRef);
             if (!userDoc.exists()) {
                 throw new Error("User document not found!");
-            }
-            
-            // Validar después de leer
-            if (existingAttendance.exists()) {
-                throw new Error("Ya has registrado tu asistencia para este evento.");
             }
             
             // Calcular valores
