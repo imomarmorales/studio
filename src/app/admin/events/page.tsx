@@ -279,6 +279,67 @@ function ManageEventsContent() {
     }
   };
 
+  const clearDatabase = async () => {
+    if (!firestore) return;
+
+    const confirmed = window.confirm(
+      '⚠️ ¿Estás seguro?\n\nEsta acción eliminará TODOS los datos de la base de datos excepto el usuario admin@congreso.mx.\n\n- Todos los eventos\n- Todos los usuarios (excepto admin)\n- Todos los ponentes\n- Todos los volantes RetoFIT\n\nEsta acción NO se puede deshacer.'
+    );
+
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const { getDocs, deleteDoc } = await import('firebase/firestore');
+
+      // Eliminar todos los eventos
+      const eventsSnapshot = await getDocs(collection(firestore, 'events'));
+      for (const eventDoc of eventsSnapshot.docs) {
+        await deleteDoc(eventDoc.ref);
+      }
+
+      // Eliminar todos los usuarios EXCEPTO admin@congreso.mx
+      const usersSnapshot = await getDocs(collection(firestore, 'users'));
+      let deletedUsers = 0;
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        if (userData.email !== 'admin@congreso.mx') {
+          await deleteDoc(userDoc.ref);
+          deletedUsers++;
+        }
+      }
+
+      // Eliminar todos los ponentes
+      const speakersSnapshot = await getDocs(collection(firestore, 'speakers'));
+      for (const speakerDoc of speakersSnapshot.docs) {
+        await deleteDoc(speakerDoc.ref);
+      }
+
+      // Eliminar todos los volantes RetoFIT
+      const retofitSnapshot = await getDocs(collection(firestore, 'retofit_flyers'));
+      for (const flyerDoc of retofitSnapshot.docs) {
+        await deleteDoc(flyerDoc.ref);
+      }
+
+      toast({
+        title: '🗑️ Base de Datos Limpiada',
+        description: `Eventos: ${eventsSnapshot.size} eliminados\nUsuarios: ${deletedUsers} eliminados (admin preservado)\nPonentes: ${speakersSnapshot.size} eliminados\nRetoFIT: ${retofitSnapshot.size} eliminados`,
+      });
+
+      handleRefresh();
+    } catch (error) {
+      console.error('Error clearing database:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo limpiar la base de datos completamente.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -428,39 +489,20 @@ function ManageEventsContent() {
                 
                 <div className="flex gap-2 flex-wrap">
                   <Button 
-                    onClick={createQuickEvent} 
+                    onClick={clearDatabase} 
                     disabled={isSubmitting}
-                    variant="outline"
+                    variant="destructive"
                     size="lg"
                     className="gap-2"
                   >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        Creando...
+                        Limpiando...
                       </>
                     ) : (
                       <>
-                        ⚡ 2 Eventos 9am
-                      </>
-                    )}
-                  </Button>
-
-                  <Button 
-                    onClick={createTestUsers} 
-                    disabled={isSubmitting}
-                    variant="outline"
-                    size="lg"
-                    className="gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Creando...
-                      </>
-                    ) : (
-                      <>
-                        👥 10 Usuarios
+                        🗑️ Limpiar Base de Datos
                       </>
                     )}
                   </Button>

@@ -138,15 +138,7 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-8 w-8 rounded-full"
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        <DialogHeader>
           <DialogTitle>Escanear Código QR</DialogTitle>
           <DialogDescription>
             Apunta tu cámara al código QR del evento para marcar tu asistencia.

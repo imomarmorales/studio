@@ -30,8 +30,8 @@ export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendan
     'in-progress': {
       label: 'En Curso',
       variant: 'destructive' as const,
-      className: 'border-green-500 bg-green-50 shadow-lg shadow-green-100',
-      badgeClassName: 'bg-green-600 text-white',
+      className: 'border-red-500 bg-red-50 shadow-lg shadow-red-100',
+      badgeClassName: 'bg-red-600 text-white',
     },
     'finished': {
       label: 'Finalizado',
@@ -70,8 +70,8 @@ export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendan
         </div>
         {status === 'in-progress' && (
           <div className="absolute top-3 left-3">
-            <Badge className="bg-white text-green-600 border-green-500">
-              🟢 AHORA
+            <Badge className="bg-white text-red-600 border-red-500">
+              🔴 AHORA
             </Badge>
           </div>
         )}
