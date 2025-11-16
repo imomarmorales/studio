@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import type { Participant } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
@@ -65,8 +64,6 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <FirebaseClientProvider>
-      <AdminAuthGuard>{children}</AdminAuthGuard>
-    </FirebaseClientProvider>
+    <AdminAuthGuard>{children}</AdminAuthGuard>
   );
 }

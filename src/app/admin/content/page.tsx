@@ -17,7 +17,6 @@ import { Trash2, Upload, Loader2, Image as ImageIcon, GripVertical } from 'lucid
 import { Badge } from '@/components/ui/badge';
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import Image from 'next/image';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -635,21 +634,19 @@ function ContentManagementContent() {
 
 export default function ContentManagementPage() {
   return (
-    <FirebaseClientProvider>
-      <AdminAuthGuard>
-        <SidebarProvider>
-          <AdminSidebar />
-          <SidebarInset>
-            {/* Mobile Header */}
-            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-              <SidebarTrigger className="h-10 w-10 -ml-2" />
-              <h1 className="text-lg font-semibold">Contenido Principal</h1>
-            </header>
-            
-            <ContentManagementContent />
-          </SidebarInset>
-        </SidebarProvider>
-      </AdminAuthGuard>
-    </FirebaseClientProvider>
+    <AdminAuthGuard>
+      <SidebarProvider>
+        <AdminSidebar />
+        <SidebarInset>
+          {/* Mobile Header */}
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+            <SidebarTrigger className="h-10 w-10 -ml-2" />
+            <h1 className="text-lg font-semibold">Contenido Principal</h1>
+          </header>
+          
+          <ContentManagementContent />
+        </SidebarInset>
+      </SidebarProvider>
+    </AdminAuthGuard>
   );
 }
