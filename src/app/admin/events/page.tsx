@@ -160,36 +160,36 @@ function ManageEventsContent() {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
-      // 9pm hoy
+      // 12:00 AM hoy (medianoche)
       const startDateTime = new Date(today);
-      startDateTime.setHours(21, 0, 0, 0);
+      startDateTime.setHours(0, 0, 0, 0);
       
-      // 11pm hoy
+      // 8:00 AM hoy
       const endDateTime = new Date(today);
-      endDateTime.setHours(23, 0, 0, 0);
+      endDateTime.setHours(8, 0, 0, 0);
 
       const qrToken = generateQRToken(12);
       const duration = calculateDuration(startDateTime, endDateTime);
 
       const quickEvent: Omit<CongressEvent, 'id'> = {
-        title: 'Evento de Prueba 3',
-        description: 'Tercer evento de ejemplo creado rápidamente para probar la asistencia.',
+        title: 'Evento de Prueba Madrugada',
+        description: 'Evento de ejemplo de 12am a 8am para probar la asistencia.',
         dateTime: startDateTime.toISOString(),
         endDateTime: endDateTime.toISOString(),
-        location: 'Laboratorio de Innovación',
-        imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMzYjgyZjY7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4YjVjZjY7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNDUlIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkV2ZW50byBkZSBQcnVlYmEgMzwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjYwJSIgZm9udC1zaXplPSIyNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjIxOjAwIC0gMjM6MDA8L3RleHQ+PC9zdmc+',
+        location: 'Sala Principal',
+        imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxZTQwYWY7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM2MzY2ZjE7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNDAlIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkV2ZW50byBNYWRydWdhZGE8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xMjowMCBBTSAtIDg6MDAgQU08L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI3MCUiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNhbGEgUHJpbmNpcGFsPC90ZXh0Pjwvc3ZnPg==',
         pointsPerAttendance: 100,
         qrToken: qrToken,
         qrValid: true,
         duration: duration,
-        speakers: ['Instructor de Prueba'],
+        speakers: ['Instructor Nocturno'],
       };
 
       await addDoc(collection(firestore, 'events'), quickEvent);
 
       toast({
         title: '🎉 Evento Rápido Creado',
-        description: `Evento de prueba para hoy 9pm-11pm creado exitosamente.`,
+        description: `Evento de prueba para hoy 12am-8am creado exitosamente.`,
       });
 
       handleRefresh();
@@ -367,7 +367,7 @@ function ManageEventsContent() {
                       </>
                     ) : (
                       <>
-                        ⚡ Evento HOY 9pm
+                        ⚡ Evento 12am-8am
                       </>
                     )}
                   </Button>
