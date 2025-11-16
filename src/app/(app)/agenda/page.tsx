@@ -8,18 +8,18 @@ import { collection, query, orderBy, serverTimestamp, doc, runTransaction } from
 import type { CongressEvent } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Bell, X, Calendar as CalendarIcon, Grid3x3, List } from 'lucide-react';
+import { AlertTriangle, Bell, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ListOrdered } from 'lucide-react';
 import { EventDetailsDialog } from '@/components/events/EventDetailsDialog';
 import { QrScannerDialog } from '@/components/events/QrScannerDialog';
 import { useToast } from '@/hooks/use-toast';
 import { EventCard } from '@/components/events/EventCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEventStatus, canMarkAttendance, decodeEventQR } from '@/lib/event-utils';
 import { Button } from '@/components/ui/button';
-import { EventTimeline } from '@/components/events/EventTimeline';
 import { checkAndAwardBadges } from '@/lib/badges';
-import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, addDays, subDays } from 'date-fns';
+import { format, isSameDay, addDays, subDays, startOfDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function EventCardSkeleton() {
   return (
@@ -43,20 +43,18 @@ export default function AgendaPage() {
   const [selectedEvent, setSelectedEvent] = useState<CongressEvent | null>(null);
   const [isScannerOpen, setScannerOpen] = useState(false);
   const [eventForAttendance, setEventForAttendance] = useState<CongressEvent | null>(null);
-  const [filterTab, setFilterTab] = useState<'all' | 'in-progress' | 'upcoming'>('all');
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'calendar' | 'grid' | 'timeline'>('calendar');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'grid' | 'itinerary'>('grid');
+  const [eventFilter, setEventFilter] = useState<'available' | 'expired'>('available');
 
   const eventsQuery = useMemoFirebase(
     () => {
       if (!firestore) return null;
-      if (isUserLoading) return null; // Wait for auth to complete
-      if (!user) return null; // No user, no query
       return query(collection(firestore, 'events'), orderBy('dateTime', 'asc'));
     },
-    [firestore, user, isUserLoading]
+    [firestore]
   );
   const { data: events, isLoading, error} = useCollection<CongressEvent>(eventsQuery);
 
@@ -305,17 +303,24 @@ export default function AgendaPage() {
     }
   };
 
-  // Filtrar eventos por tab
-  const filteredEvents = events?.filter((event) => {
-    if (filterTab === 'all') return true;
-    const status = getEventStatus(event);
-    if (filterTab === 'in-progress') return status === 'in-progress';
-    if (filterTab === 'upcoming') return status === 'upcoming';
-    return true;
-  }) || [];
+  // Filtrar eventos del día seleccionado (para itinerario)
+  const eventsForSelectedDay = events?.filter((event) => 
+    isSameDay(new Date(event.dateTime), selectedDate)
+  ) || [];
 
-  const inProgressCount = events?.filter(e => getEventStatus(e) === 'in-progress').length || 0;
-  const upcomingCount = events?.filter(e => getEventStatus(e) === 'upcoming').length || 0;
+  // Agrupar eventos por hora (para itinerario)
+  const eventsByHour = eventsForSelectedDay.reduce((acc, event) => {
+    const hour = format(parseISO(event.dateTime), 'HH:00');
+    if (!acc[hour]) {
+      acc[hour] = [];
+    }
+    acc[hour].push(event);
+    return acc;
+  }, {} as Record<string, CongressEvent[]>);
+
+  // Ordenar las horas
+  const sortedHours = Object.keys(eventsByHour).sort();
+
   const inProgressEvents = events?.filter(e => getEventStatus(e) === 'in-progress') || [];
 
   return (
@@ -346,14 +351,6 @@ export default function AgendaPage() {
                     </>
                   )}
                 </AlertDescription>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 border-red-600 text-red-700 hover:bg-red-100 dark:border-red-400 dark:text-red-300 dark:hover:bg-red-900/30"
-                  onClick={() => setFilterTab('in-progress')}
-                >
-                  Ver Eventos en Curso →
-                </Button>
               </div>
             </div>
             <Button
@@ -378,197 +375,281 @@ export default function AgendaPage() {
 
       {/* View Mode Tabs */}
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)} className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <TabsList className="grid w-full sm:w-auto grid-cols-3">
-            <TabsTrigger value="calendar" className="gap-2">
-              <CalendarIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Calendario</span>
-              <span className="sm:hidden">Cal</span>
-            </TabsTrigger>
-            <TabsTrigger value="grid" className="gap-2">
-              <Grid3x3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Tarjetas</span>
-              <span className="sm:hidden">Grid</span>
-            </TabsTrigger>
-            <TabsTrigger value="timeline" className="gap-2">
-              <List className="w-4 h-4" />
-              <span className="hidden sm:inline">Cronograma</span>
-              <span className="sm:hidden">Lista</span>
-            </TabsTrigger>
-          </TabsList>
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <TabsTrigger value="grid" className="gap-2">
+            <CalendarIcon className="w-4 h-4" />
+            Eventos
+          </TabsTrigger>
+          <TabsTrigger value="itinerary" className="gap-2">
+            <ListOrdered className="w-4 h-4" />
+            Mi Itinerario
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Filter Tabs */}
-          <Tabs value={filterTab} onValueChange={(v) => setFilterTab(v as typeof filterTab)}>
-            <TabsList className="grid w-full sm:w-auto grid-cols-3">
-              <TabsTrigger value="all">
-                Todos ({events?.length || 0})
-              </TabsTrigger>
-              <TabsTrigger value="in-progress" className={inProgressCount > 0 ? 'data-[state=active]:bg-red-100 dark:data-[state=active]:bg-red-900/30' : ''}>
-                <span className="flex items-center gap-1.5">
-                  <span className="hidden sm:inline">En Curso</span>
-                  <span className="sm:hidden">Curso</span>
-                  {inProgressCount > 0 && (
-                    <>
-                      <span className="font-bold">({inProgressCount})</span>
-                      <span className="animate-pulse text-red-600 dark:text-red-400">🔴</span>
-                    </>
-                  )}
-                  {inProgressCount === 0 && '(0)'}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="upcoming">
-                <span className="hidden sm:inline">Próximos ({upcomingCount})</span>
-                <span className="sm:hidden">Próx. ({upcomingCount})</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Calendar View */}
-        <TabsContent value="calendar" className="space-y-6 mt-0">
-          {isLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <Skeleton key={i} className="h-64 w-full" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-              {/* Week Days */}
-              {(() => {
-                const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
-                const weekDays = eachDayOfInterval({
-                  start: weekStart,
-                  end: endOfWeek(selectedDate, { weekStartsOn: 1 })
-                });
-
-                return weekDays.map((day) => {
-                  const dayEvents = (filteredEvents || []).filter(event =>
-                    isSameDay(new Date(event.dateTime), day)
-                  ).sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
-
-                  const isToday = isSameDay(day, new Date());
-                  const isSelected = isSameDay(day, selectedDate);
-
-                  return (
-                    <Card
-                      key={day.toISOString()}
-                      className={`cursor-pointer transition-all hover:shadow-lg ${
-                        isToday ? 'border-primary border-2' : ''
-                      } ${isSelected ? 'ring-2 ring-primary' : ''}`}
-                      onClick={() => setSelectedDate(day)}
-                    >
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-center">
-                          <div className={`${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                            {format(day, 'EEE', { locale: es })}
-                          </div>
-                          <div className={`text-2xl mt-1 ${isToday ? 'bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center mx-auto' : ''}`}>
-                            {format(day, 'd')}
-                          </div>
-                          {isToday && (
-                            <div className="text-xs text-primary mt-1">Hoy</div>
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {dayEvents.length === 0 ? (
-                          <p className="text-xs text-muted-foreground text-center py-4">
-                            Sin eventos
-                          </p>
-                        ) : (
-                          dayEvents.map((event) => {
-                            const status = getEventStatus(event);
-                            return (
-                              <div
-                                key={event.id}
-                                className={`p-2 rounded-md text-xs border cursor-pointer hover:shadow-md transition-all ${
-                                  status === 'in-progress'
-                                    ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
-                                    : status === 'upcoming'
-                                    ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
-                                    : 'bg-muted/50 border-border'
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedEvent(event);
-                                }}
-                              >
-                                <div className="font-semibold line-clamp-2 mb-1">{event.title}</div>
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  {status === 'in-progress' && <span className="animate-pulse">🔴</span>}
-                                  {format(new Date(event.dateTime), 'HH:mm', { locale: es })}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                });
-              })()}
-            </div>
-          )}
-          
-          {/* Navigation Buttons */}
-          <div className="flex justify-center gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedDate(subDays(selectedDate, 7))}
-            >
-              ← Semana Anterior
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedDate(new Date())}
-            >
-              Hoy
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-            >
-              Siguiente Semana →
-            </Button>
-          </div>
-        </TabsContent>
-
-        {/* Grid View */}
+        {/* Grid View - All Events as Cards */}
         <TabsContent value="grid" className="space-y-6 mt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading && Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={i} />)}
-            
-            {!isLoading && filteredEvents.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                onViewDetails={setSelectedEvent}
-                onMarkAttendance={handleMarkAttendanceClick}
-              />
-            ))}
+          {/* Filter: Available vs Expired */}
+          <div className="flex justify-center">
+            <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full max-w-md">
+              <Button
+                variant={eventFilter === 'available' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setEventFilter('available')}
+              >
+                Disponibles
+              </Button>
+              <Button
+                variant={eventFilter === 'expired' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setEventFilter('expired')}
+              >
+                Vencidos
+              </Button>
+            </div>
           </div>
 
-          {!isLoading && filteredEvents.length === 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading && Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="aspect-video w-full" />
+                <CardContent className="p-4 space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+            
+            {!isLoading && events
+              ?.filter((event) => {
+                const eventDate = new Date(event.endDateTime || event.dateTime);
+                const now = new Date();
+                const isExpired = eventDate < now;
+                return eventFilter === 'expired' ? isExpired : !isExpired;
+              })
+              .map((event) => {
+                const isExpired = eventFilter === 'expired';
+                return (
+                  <div key={event.id} className={isExpired ? 'opacity-60 grayscale' : ''}>
+                    <EventCard
+                      event={event}
+                      onViewDetails={setSelectedEvent}
+                      onMarkAttendance={handleMarkAttendanceClick}
+                    />
+                  </div>
+                );
+              })}
+          </div>
+
+          {!isLoading && events && events
+            .filter((event) => {
+              const eventDate = new Date(event.endDateTime || event.dateTime);
+              const now = new Date();
+              const isExpired = eventDate < now;
+              return eventFilter === 'expired' ? isExpired : !isExpired;
+            }).length === 0 && (
             <div className="text-center py-16">
               <p className="text-muted-foreground">
-                {filterTab === 'all' && 'No hay eventos programados por el momento.'}
-                {filterTab === 'in-progress' && 'No hay eventos en curso en este momento.'}
-                {filterTab === 'upcoming' && 'No hay eventos próximos.'}
+                {eventFilter === 'expired' 
+                  ? 'No hay eventos vencidos.'
+                  : 'No hay eventos disponibles por el momento.'}
               </p>
             </div>
           )}
         </TabsContent>
 
-        {/* Timeline View */}
-        <TabsContent value="timeline" className="space-y-6 mt-0">
+        {/* Itinerary View - Timeline by Day */}
+        <TabsContent value="itinerary" className="space-y-6 mt-0">
+          {/* Date Navigation */}
+          <div className="flex items-center justify-between gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Anterior</span>
+            </Button>
+            
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold">
+                {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}
+              </h2>
+              {isSameDay(selectedDate, new Date()) && (
+                <Badge variant="default" className="mt-1">Hoy</Badge>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+            >
+              <span className="hidden sm:inline">Siguiente</span>
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+
+          {/* Timeline by Hours */}
           {isLoading ? (
             <div className="space-y-4">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-64 w-full" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
             </div>
+          ) : eventsForSelectedDay.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center text-muted-foreground">
+                <p className="text-lg">No hay eventos programados para este día</p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setSelectedDate(new Date())}
+                >
+                  Ver eventos de hoy
+                </Button>
+              </div>
+            </Card>
           ) : (
-            <EventTimeline events={filteredEvents} />
+            <div className="space-y-4">
+              {sortedHours.map((hour) => {
+                const hourEvents = eventsByHour[hour];
+                
+                return (
+                  <div key={hour} className="flex gap-3 sm:gap-4">
+                    {/* Hour Label */}
+                    <div className="w-12 sm:w-16 flex-shrink-0 pt-1">
+                      <div className="text-xs sm:text-sm font-bold text-muted-foreground sticky top-20">
+                        {hour}
+                      </div>
+                    </div>
+
+                    {/* Events for this hour */}
+                    <div className="flex-1 space-y-3">
+                      {hourEvents.map((event) => {
+                        const status = getEventStatus(event);
+                        const isInProgress = status === 'in-progress';
+                        const isUpcoming = status === 'upcoming';
+                        const canAttend = canMarkAttendance(event);
+
+                        return (
+                          <Card
+                            key={event.id}
+                            className={`overflow-hidden transition-all hover:shadow-md cursor-pointer ${
+                              isInProgress
+                                ? 'border-red-500 border-2 shadow-red-100 dark:shadow-red-900/20'
+                                : isUpcoming
+                                ? 'border-blue-400 dark:border-blue-600'
+                                : 'border-border opacity-75'
+                            }`}
+                            onClick={() => setSelectedEvent(event)}
+                          >
+                            {/* Status bar */}
+                            <div className={`h-1 ${
+                              isInProgress
+                                ? 'bg-gradient-to-r from-red-500 via-red-400 to-red-500 animate-pulse'
+                                : isUpcoming
+                                ? 'bg-blue-500'
+                                : 'bg-muted'
+                            }`} />
+                            
+                            <div className="flex gap-3 p-3 sm:p-4">
+                              {/* Event Image - Small */}
+                              {event.imageUrl && (
+                                <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-md overflow-hidden">
+                                  <img
+                                    src={event.imageUrl}
+                                    alt={event.title}
+                                    className="object-cover w-full h-full"
+                                  />
+                                  {isInProgress && (
+                                    <div className="absolute inset-0 bg-red-600/20 flex items-center justify-center">
+                                      <span className="text-2xl animate-pulse">🔴</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Event Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <h3 className="font-semibold text-sm sm:text-base line-clamp-2 flex-1">
+                                    {event.title}
+                                  </h3>
+                                  {isInProgress && (
+                                    <Badge variant="destructive" className="text-xs animate-pulse flex-shrink-0">
+                                      En curso
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Compact info */}
+                                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-2">
+                                  <span className="font-medium">
+                                    {format(parseISO(event.dateTime), 'HH:mm', { locale: es })}
+                                  </span>
+                                  {event.duration && (
+                                    <>
+                                      <span>•</span>
+                                      <span>{event.duration}</span>
+                                    </>
+                                  )}
+                                  {event.location && (
+                                    <>
+                                      <span className="hidden sm:inline">•</span>
+                                      <span className="truncate max-w-[120px] sm:max-w-none">
+                                        {event.location}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+
+                                {/* Speakers - Only on larger screens */}
+                                {event.speakers && event.speakers.length > 0 && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1 mb-2 hidden sm:block">
+                                    <span className="font-semibold">Ponente:</span> {event.speakers.join(', ')}
+                                  </p>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 mt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-8 flex-1 sm:flex-none"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedEvent(event);
+                                    }}
+                                  >
+                                    Detalles
+                                  </Button>
+                                  {canAttend && (
+                                    <Button
+                                      size="sm"
+                                      className="text-xs h-8 flex-1 sm:flex-none"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkAttendanceClick(event);
+                                      }}
+                                    >
+                                      ✓ Asistencia
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </TabsContent>
       </Tabs>

@@ -51,4 +51,26 @@ export interface Badge {
   earnedAt?: Timestamp;
 }
 
+export interface Speaker {
+  id: string;
+  name: string;
+  title: string; // e.g., "Dr. en Ciencias de la Computación"
+  description: string; // Bio/description
+  photo: string; // Base64 image
+  institution?: string;
+  order: number; // For display order
+  createdAt?: Timestamp;
+}
+
+export interface RetoFitFlyer {
+  id: string;
+  title: string;
+  description: string;
+  image: string; // Base64 image
+  link?: string; // Optional external link
+  order: number; // For display order
+  active: boolean; // Show/hide flyer
+  createdAt?: Timestamp;
+}
+
 export type EventStatus = 'upcoming' | 'in-progress' | 'finished';

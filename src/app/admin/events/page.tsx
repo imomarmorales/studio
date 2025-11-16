@@ -34,6 +34,7 @@ import { EventQrManagementDialog } from '@/components/admin/EventQrManagementDia
 import { EventAttendeesDialog } from '@/components/admin/EventAttendeesDialog';
 import { EmptyState } from '@/components/admin/EmptyState';
 import { EventCard } from '@/components/admin/EventCard';
+import { ImportarEventosEjemplo } from '@/components/admin/ImportarEventosEjemplo';
 import {
   Sheet,
   SheetContent,

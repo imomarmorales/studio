@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 const navLinks = [
-  { href: "/#agenda", label: "Agenda" },
-  { href: "/#ponentes", label: "Ponentes" },
-  { href: "/#reto-fit", label: "#RetoFIT" },
+  { href: "/agenda-publica", label: "Agenda" },
+  { href: "/ponentes-publicos", label: "Ponentes" },
+  { href: "/reto-fit", label: "#RetoFIT" },
 ];
 
 export function Header() {

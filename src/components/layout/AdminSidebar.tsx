@@ -1,10 +1,11 @@
 'use client';
 
-import { Shield, Users, Home, LogOut, Calendar, X, Layers } from 'lucide-react';
+import { Shield, Users, Home, LogOut, Calendar, X, Layers, UserCircle, Dumbbell } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/shared/Logo';
-import { useAuth } from '@/firebase';
-import { signOut } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
+import { initializeApp, getApps } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -22,21 +23,25 @@ import { usePathname } from 'next/navigation';
 
 const menuItems = [
     { href: '/admin/events', label: 'Gestionar Eventos', icon: Calendar },
+    { href: '/admin/speakers', label: 'Ponentes', icon: UserCircle },
+    { href: '/admin/retofit', label: '#RetoFIT Flyers', icon: Dumbbell },
     { href: '/admin/usuarios', label: 'Usuarios Registrados', icon: Users },
     { href: '/admin/content', label: 'Contenido Principal', icon: Layers },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { toggleSidebar, isMobile } = useSidebar();
 
   const handleLogout = async () => {
-    if (!auth) return;
-    
     try {
+      if (!getApps().length) {
+        initializeApp(firebaseConfig);
+      }
+      const auth = getAuth();
+      
       await signOut(auth);
       toast({
         title: 'Sesión cerrada',
