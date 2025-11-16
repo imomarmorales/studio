@@ -11,13 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, collection, query, orderBy, where } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useUser, useFirebase, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { doc, collection, query, orderBy, where, updateDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Upload, Trophy, Calendar, Award, CheckCircle2, Loader2 } from "lucide-react";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { DigitalCredential } from "@/components/dashboard/DigitalCredential";
 import { useEffect, useState } from "react";
@@ -27,16 +25,20 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UserBadges } from "@/components/profile/UserBadges";
+import { compressImageIfNeeded, convertImageToBase64, validateImageFile } from "@/lib/upload-image";
 
 
 export default function PerfilPage() {
   const { user, isUserLoading } = useUser();
-  const { firestore, storage } = useFirebase();
+  const { firestore } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
 
   // Redirect if not logged in
   useEffect(() => {
@@ -44,6 +46,21 @@ export default function PerfilPage() {
       router.push('/login');
     }
   }, [isUserLoading, user, router]);
+
+  // Get current user document
+  const userDocRef = useMemoFirebase(
+    () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
+  const { data: userData } = useDoc<Participant>(userDocRef);
+
+  // Initialize form with user data
+  useEffect(() => {
+    if (userData) {
+      setName(userData.name || '');
+      setEmail(userData.email || '');
+    }
+  }, [userData]);
 
   // Query user's attendance history
   const attendanceQuery = useMemoFirebase(
@@ -82,7 +99,6 @@ export default function PerfilPage() {
   // Calculate user's ranking position
   const rankedUsers = allUsers?.filter(u => (u.points || 0) > 0) || [];
   const userPosition = user ? rankedUsers.findIndex(u => u.id === user.uid) + 1 : -1;
-  const userStats = allUsers?.find(u => u.id === user?.uid);
 
   // Get event details for each attendance
   const attendanceWithEvents = attendances?.map(attendance => {
@@ -90,59 +106,35 @@ export default function PerfilPage() {
     return { ...attendance, event };
   }) || [];
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
       toast({
         variant: 'destructive',
         title: 'Archivo Inválido',
-        description: 'Por favor selecciona una imagen válida.',
+        description: validation.error,
       });
       return;
     }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        variant: 'destructive',
-        title: 'Archivo Muy Grande',
-        description: 'La imagen debe ser menor a 5MB.',
-      });
-      return;
-    }
-
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleUploadPhoto = async () => {
-    if (!selectedFile || !user || !storage || !firestore) return;
 
     setIsUploading(true);
     try {
-      // Upload to Firebase Storage
-      const storageRef = ref(storage, `profile_photos/${user.uid}/${Date.now()}_${selectedFile.name}`);
-      await uploadBytes(storageRef, selectedFile);
-      const downloadUrl = await getDownloadURL(storageRef);
+      // Convert to base64
+      const base64 = await convertImageToBase64(file);
+      const compressed = await compressImageIfNeeded(base64);
 
-      // Update user document
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await setDocumentNonBlocking(userDocRef, { photoURL: downloadUrl }, { merge: true });
-
-      toast({
-        title: '✅ Foto Actualizada',
-        description: 'Tu foto de perfil se ha actualizado correctamente.',
-      });
-
-      setSelectedFile(null);
-      setPreviewUrl(null);
+      // Save immediately to Firestore
+      if (userDocRef) {
+        await updateDoc(userDocRef, { photoURL: compressed });
+        
+        toast({
+          title: '✅ Foto Actualizada',
+          description: 'Tu foto de perfil se ha actualizado correctamente.',
+        });
+      }
     } catch (error: any) {
       console.error('Error uploading photo:', error);
       toast({
@@ -152,23 +144,36 @@ export default function PerfilPage() {
       });
     } finally {
       setIsUploading(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || !firestore) return;
+    if (!user || !firestore || !userDocRef) return;
 
-    const formData = new FormData(event.currentTarget);
-    const newName = formData.get("name") as string;
+    setIsSaving(true);
+    try {
+      await updateDoc(userDocRef, { 
+        name: name,
+        email: email,
+      });
 
-    const userDocRef = doc(firestore, "users", user.uid);
-    setDocumentNonBlocking(userDocRef, { name: newName }, { merge: true });
-
-    toast({
-      title: "✅ Perfil Actualizado",
-      description: "Tu nombre ha sido actualizado correctamente.",
-    });
+      toast({
+        title: "✅ Perfil Actualizado",
+        description: "Tus cambios se han guardado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        variant: 'destructive',
+        title: "Error al Guardar",
+        description: "No se pudieron guardar los cambios.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isUserLoading || !user) {
@@ -230,7 +235,7 @@ export default function PerfilPage() {
             <Award className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(userStats?.points || 0).toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(userData?.points || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               puntos acumulados
             </p>
@@ -243,7 +248,7 @@ export default function PerfilPage() {
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userStats?.attendanceCount || 0}</div>
+            <div className="text-2xl font-bold">{userData?.attendanceCount || 0}</div>
             <p className="text-xs text-muted-foreground">
               eventos completados
             </p>
@@ -256,7 +261,7 @@ export default function PerfilPage() {
             <Badge className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userStats?.badges?.length || 0}</div>
+            <div className="text-2xl font-bold">{userData?.badges?.length || 0}</div>
             <p className="text-xs text-muted-foreground">
               logros desbloqueados
             </p>
@@ -275,58 +280,70 @@ export default function PerfilPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre Completo</Label>
-                <Input id="name" name="name" defaultValue={user.displayName || ''} />
+                <Input 
+                  id="name" 
+                  name="name" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
-                <Input id="email" type="email" value={user.email || ''} disabled />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="avatar">Foto de Perfil</Label>
                 <div className="flex items-center gap-4">
                     <Avatar className="w-20 h-20 border-4 border-primary">
-                      <AvatarImage src={previewUrl || user.photoURL || undefined} alt="Avatar" />
+                      <AvatarImage src={userData?.photoURL || undefined} alt="Avatar" />
                       <AvatarFallback className="text-2xl font-bold">
-                        {user.displayName?.charAt(0).toUpperCase() || 'U'}
+                        {userData?.name?.charAt(0).toUpperCase() || user?.displayName?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-2">
-                      <Button type="button" variant="outline" size="sm" asChild>
+                      <Button type="button" variant="outline" size="sm" asChild disabled={isUploading}>
                           <label htmlFor="avatar-upload" className="cursor-pointer">
-                              <Upload className="mr-2 h-4 w-4" />
-                              Seleccionar Foto
+                              {isUploading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Subiendo...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  Seleccionar Foto
+                                </>
+                              )}
                           </label>
                       </Button>
-                      {selectedFile && (
-                        <Button 
-                          type="button" 
-                          size="sm" 
-                          onClick={handleUploadPhoto}
-                          disabled={isUploading}
-                        >
-                          {isUploading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Subiendo...
-                            </>
-                          ) : (
-                            'Guardar Foto'
-                          )}
-                        </Button>
-                      )}
                       <input 
                         id="avatar-upload" 
                         type="file" 
                         className="sr-only" 
                         accept="image/*"
                         onChange={handleFileSelect}
+                        disabled={isUploading}
                       />
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground">JPG, PNG o GIF. Máximo 5MB.</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG o GIF. Máximo 2MB (se comprime automáticamente).</p>
               </div>
 
-              <Button type="submit">Guardar Cambios</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar Cambios'
+                )}
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -406,8 +423,8 @@ export default function PerfilPage() {
       <Card>
         <CardContent className="pt-6">
           <UserBadges 
-            badges={userStats?.badges} 
-            attendanceCount={userStats?.attendanceCount || 0}
+            badges={userData?.badges} 
+            attendanceCount={userData?.attendanceCount || 0}
           />
         </CardContent>
       </Card>
