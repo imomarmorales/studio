@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Calendar as CalendarIcon, Clock, MapPin, Award } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, addDays, subDays } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import { PublicLayout } from '@/components/layout/PublicLayout';
@@ -45,7 +45,9 @@ export default function AgendaPublicaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const eventStartDate = new Date(2025, 10, 18); // November is month 10 (0-indexed)
+  const eventEndDate = new Date(2025, 10, 24);
 
   // Obtener eventos de Firestore
   useEffect(() => {
@@ -73,7 +75,6 @@ export default function AgendaPublicaPage() {
     fetchEvents();
   }, []);
 
-  const upcomingEvents = events.filter(e => getEventStatus(e) === 'upcoming');
   const inProgressEvents = events.filter(e => getEventStatus(e) === 'in-progress');
 
   return (
@@ -148,10 +149,9 @@ export default function AgendaPublicaPage() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
                 {(() => {
-                  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
                   const weekDays = eachDayOfInterval({
-                    start: weekStart,
-                    end: endOfWeek(selectedDate, { weekStartsOn: 1 })
+                    start: eventStartDate,
+                    end: eventEndDate,
                   });
 
                   return weekDays.map((day) => {
@@ -223,28 +223,6 @@ export default function AgendaPublicaPage() {
                 })()}
               </div>
             )}
-            
-            {/* Navigation Buttons */}
-            <div className="flex justify-center gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedDate(subDays(selectedDate, 7))}
-              >
-                ← Semana Anterior
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedDate(new Date())}
-              >
-                Hoy
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-              >
-                Siguiente Semana →
-              </Button>
-            </div>
           </TabsContent>
 
           {/* List View */}
