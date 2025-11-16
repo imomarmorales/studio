@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, addDoc, query, orderBy, doc } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, doc, setDoc } from 'firebase/firestore';
 import type { CongressEvent, Participant } from '@/lib/types';
 import { Calendar as CalendarIcon, Loader2, PlusCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -160,36 +160,61 @@ function ManageEventsContent() {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
-      // 12:00 AM hoy (medianoche)
-      const startDateTime = new Date(today);
-      startDateTime.setHours(0, 0, 0, 0);
+      // Evento 1: 9:00 AM - 10:00 AM
+      const event1Start = new Date(today);
+      event1Start.setHours(9, 0, 0, 0);
       
-      // 8:00 AM hoy
-      const endDateTime = new Date(today);
-      endDateTime.setHours(8, 0, 0, 0);
+      const event1End = new Date(today);
+      event1End.setHours(10, 0, 0, 0);
 
-      const qrToken = generateQRToken(12);
-      const duration = calculateDuration(startDateTime, endDateTime);
+      const qrToken1 = generateQRToken(12);
+      const duration1 = calculateDuration(event1Start, event1End);
 
-      const quickEvent: Omit<CongressEvent, 'id'> = {
-        title: 'Evento de Prueba Madrugada',
-        description: 'Evento de ejemplo de 12am a 8am para probar la asistencia.',
-        dateTime: startDateTime.toISOString(),
-        endDateTime: endDateTime.toISOString(),
-        location: 'Sala Principal',
-        imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxZTQwYWY7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM2MzY2ZjE7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNDAlIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkV2ZW50byBNYWRydWdhZGE8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xMjowMCBBTSAtIDg6MDAgQU08L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI3MCUiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNhbGEgUHJpbmNpcGFsPC90ZXh0Pjwvc3ZnPg==',
-        pointsPerAttendance: 100,
-        qrToken: qrToken,
+      const quickEvent1: Omit<CongressEvent, 'id'> = {
+        title: 'Taller de Innovación',
+        description: 'Aprende las últimas tendencias en innovación tecnológica.',
+        dateTime: event1Start.toISOString(),
+        endDateTime: event1End.toISOString(),
+        location: 'Sala A',
+        imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlZjQ0NDQ7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmOTczMTY7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNDAlIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlRhbGxlciBkZSBJbm5vdmFjacOzbjwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1zaXplPSIyOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjk6MDAgQU0gLSAxMDowMCBBTTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjcwJSIgZm9udC1zaXplPSIyMCIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuOSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U2FsYSBBPC90ZXh0Pjwvc3ZnPg==',
+        pointsPerAttendance: 150,
+        qrToken: qrToken1,
         qrValid: true,
-        duration: duration,
-        speakers: ['Instructor Nocturno'],
+        duration: duration1,
+        speakers: ['Dr. Carlos Méndez'],
       };
 
-      await addDoc(collection(firestore, 'events'), quickEvent);
+      // Evento 2: 9:00 AM - 10:00 AM (misma hora, diferente sala)
+      const event2Start = new Date(today);
+      event2Start.setHours(9, 0, 0, 0);
+      
+      const event2End = new Date(today);
+      event2End.setHours(10, 0, 0, 0);
+
+      const qrToken2 = generateQRToken(12);
+      const duration2 = calculateDuration(event2Start, event2End);
+
+      const quickEvent2: Omit<CongressEvent, 'id'> = {
+        title: 'Workshop de Diseño UX',
+        description: 'Fundamentos de experiencia de usuario y diseño de interfaces.',
+        dateTime: event2Start.toISOString(),
+        endDateTime: event2End.toISOString(),
+        location: 'Sala B',
+        imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMzYjgyZjY7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4YjVjZjY7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNDAlIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldvcmtzaG9wIGRlIERpc2XDsW8gVVg8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj45OjAwIEFNIC0gMTA6MDAgQU08L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI3MCUiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNhbGEgQjwvdGV4dD48L3N2Zz4=',
+        pointsPerAttendance: 150,
+        qrToken: qrToken2,
+        qrValid: true,
+        duration: duration2,
+        speakers: ['Diseñadora Ana López'],
+      };
+
+      // Crear ambos eventos
+      await addDoc(collection(firestore, 'events'), quickEvent1);
+      await addDoc(collection(firestore, 'events'), quickEvent2);
 
       toast({
-        title: '🎉 Evento Rápido Creado',
-        description: `Evento de prueba para hoy 12am-8am creado exitosamente.`,
+        title: '🎉 Eventos Rápidos Creados',
+        description: `2 eventos de prueba para hoy 9am-10am creados exitosamente.`,
       });
 
       handleRefresh();
@@ -205,7 +230,27 @@ function ManageEventsContent() {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const createTestUsers = async () => {
+    if (!firestore) return;
+    setIsSubmitting(true);
+
+    try {
+      const testUsers = [
+        { name: 'María González', email: 'maria.gonzalez@test.com', points: 950, attendanceCount: 8 },
+        { name: 'Juan Pérez', email: 'juan.perez@test.com', points: 850, attendanceCount: 7 },
+        { name: 'Ana Martínez', email: 'ana.martinez@test.com', points: 750, attendanceCount: 6 },
+        { name: 'Carlos Rodríguez', email: 'carlos.rodriguez@test.com', points: 650, attendanceCount: 5 },
+        { name: 'Laura Sánchez', email: 'laura.sanchez@test.com', points: 550, attendanceCount: 4 },
+        { name: 'Pedro Ramírez', email: 'pedro.ramirez@test.com', points: 450, attendanceCount: 3 },
+        { name: 'Sofia Torres', email: 'sofia.torres@test.com', points: 350, attendanceCount: 3 },
+        { name: 'Miguel Flores', email: 'miguel.flores@test.com', points: 250, attendanceCount: 2 },
+        { name: 'Carmen Díaz', email: 'carmen.diaz@test.com', points: 150, attendanceCount: 1 },
+        { name: 'Roberto Vargas', email: 'roberto.vargas@test.com', points: 100, attendanceCount: 1 },
+      ];
+
+      let created = 0;
+      for (const testUser of testUsers) {
+        const userId = `test_${testUser.email.split('@')[0]}`;\n        await setDoc(doc(firestore, 'users', userId), {\n          name: testUser.name,\n          email: testUser.email,\n          points: testUser.points,\n          attendanceCount: testUser.attendanceCount,\n          badges: [],\n          role: 'participant',\n          createdAt: new Date().toISOString(),\n        });\n        created++;\n      }\n\n      toast({\n        title: '👥 Usuarios de Prueba Creados',\n        description: `${created} usuarios con diferentes puntuaciones creados exitosamente.`,\n      });\n    } catch (error) {\n      console.error('Error creating test users:', error);\n      toast({\n        variant: 'destructive',\n        title: 'Error',\n        description: 'No se pudieron crear los usuarios de prueba.',\n      });\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -352,7 +397,7 @@ function ManageEventsContent() {
                   description="Administra todos los eventos del congreso desde un solo lugar."
                 />
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button 
                     onClick={createQuickEvent} 
                     disabled={isSubmitting}
@@ -367,7 +412,26 @@ function ManageEventsContent() {
                       </>
                     ) : (
                       <>
-                        ⚡ Evento 12am-8am
+                        ⚡ 2 Eventos 9am
+                      </>
+                    )}
+                  </Button>
+
+                  <Button 
+                    onClick={createTestUsers} 
+                    disabled={isSubmitting}
+                    variant="outline"
+                    size="lg"
+                    className="gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Creando...
+                      </>
+                    ) : (
+                      <>
+                        👥 10 Usuarios
                       </>
                     )}
                   </Button>

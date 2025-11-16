@@ -17,7 +17,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Upload, Trophy, Calendar, Award, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DigitalCredential } from "@/components/dashboard/DigitalCredential";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Attendance, CongressEvent, Participant } from "@/lib/types";
@@ -272,9 +271,9 @@ export default function PerfilPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="space-y-6">
         {/* Edit Information */}
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>Editar Información</CardTitle>
             <CardDescription>Actualiza tus datos personales y foto de perfil.</CardDescription>
@@ -350,11 +349,6 @@ export default function PerfilPage() {
             </form>
           </CardContent>
         </Card>
-
-        {/* Digital Credential */}
-        <div className="space-y-6">
-            <DigitalCredential user={{ name: user.displayName || 'Usuario', email: user.email || '', digitalCredentialQR: user.uid }} />
-        </div>
       </div>
 
       {/* Attendance History */}

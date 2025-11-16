@@ -30,7 +30,6 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 const menuItems = [
-  { href: '/dashboard', label: 'Mi Panel', icon: Home },
   { href: '/agenda', label: 'Agenda y Eventos', icon: Calendar },
   { href: '/ranking', label: 'Ranking', icon: Medal },
   { href: '/perfil', label: 'Mi Perfil', icon: User },
