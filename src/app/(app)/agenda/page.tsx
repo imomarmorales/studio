@@ -198,42 +198,48 @@ export default function AgendaPage() {
         let newAttendanceCount = 0;
         
         await runTransaction(firestore, async (transaction) => {
-            // 1. Check if attendance already exists
             const attendanceDocId = `${user.uid}_${eventForAttendance.id}`;
             const attendanceDocRef = doc(attendanceRef, attendanceDocId);
+            
+            // ⚠️ TODAS LAS LECTURAS PRIMERO (antes de cualquier escritura)
+            // 1. Check if attendance already exists
             const existingAttendance = await transaction.get(attendanceDocRef);
             
+            // 2. Read user document
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists()) {
+                throw new Error("User document not found!");
+            }
+            
+            // Validar después de leer
             if (existingAttendance.exists()) {
                 throw new Error("Ya has registrado tu asistencia para este evento.");
             }
-
-            // 2. Create attendance record
+            
+            // Calcular valores
+            const currentPoints = userDoc.data().points || 0;
+            const currentAttendanceCount = userDoc.data().attendanceCount || 0;
+            const pointsToAdd = eventForAttendance.pointsPerAttendance || 100;
+            newAttendanceCount = currentAttendanceCount + 1;
+            
+            // ✅ AHORA SÍ, TODAS LAS ESCRITURAS
+            // 3. Create attendance record
             const newAttendance = {
                 id: attendanceDocId,
                 participantId: user.uid,
                 eventId: eventForAttendance.id,
                 timestamp: serverTimestamp(),
-                pointsEarned: eventForAttendance.pointsPerAttendance || 100,
+                pointsEarned: pointsToAdd,
             };
             transaction.set(attendanceDocRef, newAttendance);
 
-            // 3. Create mirror in event attendees
+            // 4. Create mirror in event attendees
             transaction.set(attendeeRef, {
                 participantId: user.uid,
                 timestamp: serverTimestamp(),
             });
 
-            // 4. Increment user points and attendance count
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists()) {
-                throw new Error("User document not found!");
-            }
-            const currentPoints = userDoc.data().points || 0;
-            const currentAttendanceCount = userDoc.data().attendanceCount || 0;
-            const pointsToAdd = eventForAttendance.pointsPerAttendance || 100;
-            
-            newAttendanceCount = currentAttendanceCount + 1;
-            
+            // 5. Update user points and attendance count
             transaction.update(userRef, { 
                 points: currentPoints + pointsToAdd,
                 attendanceCount: newAttendanceCount,
