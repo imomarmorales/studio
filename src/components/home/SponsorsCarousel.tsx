@@ -73,9 +73,9 @@ export function SponsorsCarousel() {
   const tripleSponsors = [...sponsors, ...sponsors, ...sponsors];
 
   return (
-    <div className="py-16 bg-muted/30">
+    <div className="py-16 bg-gray-800">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-foreground">
+        <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-white">
           Nuestros Patrocinadores
         </h2>
         <div className="relative overflow-hidden">
