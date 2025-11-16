@@ -56,14 +56,21 @@ export function Header() {
               </SheetContent>
             </Sheet>
             
-            <div className="flex justify-center">
+            <div className="flex justify-center items-center gap-4">
                  <Image
                     src="/header-logos.png"
                     alt="Logos de la UAT y Facultad de Ingeniería de Tampico"
-                    width={250}
-                    height={40}
+                    width={180}
+                    height={30}
                     className="object-contain"
                     priority
+                />
+                <Image
+                    src="/organizer-logo.png"
+                    alt="Logo de organizador adicional"
+                    width={80}
+                    height={30}
+                    className="object-contain"
                 />
             </div>
 
@@ -73,7 +80,7 @@ export function Header() {
 
         {/* Desktop View */}
         <div className="hidden w-full items-center justify-between md:flex">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <Image
                 src="/header-logos.png"
                 alt="Logos de la UAT y Facultad de Ingeniería de Tampico"
@@ -82,6 +89,13 @@ export function Header() {
                 className="object-contain"
                 priority
               />
+            <Image
+                src="/organizer-logo.png"
+                alt="Logo de organizador adicional"
+                width={120}
+                height={50}
+                className="object-contain"
+            />
           </div>
 
           <nav className="flex items-center gap-6 text-sm font-medium">
