@@ -198,12 +198,12 @@ export default function ManageEventsPage() {
       removeImage();
       setIsSheetOpen(false);
       handleRefresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating event:', error);
       toast({
         variant: 'destructive',
         title: 'Error al crear el evento',
-        description: 'Hubo un problema al guardar el evento. Inténtalo de nuevo.',
+        description: error.message || 'Hubo un problema al guardar el evento. Inténtalo de nuevo.',
       });
     } finally {
       setIsSubmitting(false);
