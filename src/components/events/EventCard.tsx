@@ -14,9 +14,10 @@ interface EventCardProps {
   onViewDetails: (event: CongressEvent) => void;
   onMarkAttendance?: (event: CongressEvent) => void;
   showAttendanceButton?: boolean;
+  hasAttended?: boolean; // Nuevo: indica si ya marcó asistencia
 }
 
-export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendanceButton = true }: EventCardProps) {
+export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendanceButton = true, hasAttended = false }: EventCardProps) {
   const status = getEventStatus(event);
   
   const statusConfig = {
@@ -29,8 +30,8 @@ export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendan
     'in-progress': {
       label: 'En Curso',
       variant: 'destructive' as const,
-      className: 'border-red-500 bg-red-50 shadow-lg shadow-red-100 animate-pulse-subtle',
-      badgeClassName: 'bg-red-600 text-white animate-pulse',
+      className: 'border-green-500 bg-green-50 shadow-lg shadow-green-100 animate-pulse-gentle',
+      badgeClassName: 'bg-green-600 text-white animate-pulse-gentle',
     },
     'finished': {
       label: 'Finalizado',
@@ -69,8 +70,8 @@ export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendan
         </div>
         {status === 'in-progress' && (
           <div className="absolute top-3 left-3">
-            <Badge className="bg-white text-red-600 border-red-500 animate-bounce">
-              🔴 AHORA
+            <Badge className="bg-white text-green-600 border-green-500 animate-pulse-gentle">
+              🟢 AHORA
             </Badge>
           </div>
         )}
@@ -109,15 +110,24 @@ export function EventCard({ event, onViewDetails, onMarkAttendance, showAttendan
         </div>
 
         {showAttendanceButton && status === 'in-progress' && onMarkAttendance && (
-          <Button 
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMarkAttendance(event);
-            }}
-          >
-            Marcar Asistencia
-          </Button>
+          hasAttended ? (
+            <Button 
+              className="w-full bg-gray-500 text-white font-semibold cursor-not-allowed"
+              disabled
+            >
+              ✓ Asistencia Registrada
+            </Button>
+          ) : (
+            <Button 
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkAttendance(event);
+              }}
+            >
+              Marcar Asistencia
+            </Button>
+          )
         )}
         
         {status === 'upcoming' && (

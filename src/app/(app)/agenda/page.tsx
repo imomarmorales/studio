@@ -58,6 +58,22 @@ export default function AgendaPage() {
   );
   const { data: events, isLoading, error} = useCollection<CongressEvent>(eventsQuery);
 
+  // Get user's attendance records
+  const attendanceQuery = useMemoFirebase(
+    () => {
+      if (!firestore || !user) return null;
+      return collection(firestore, `users/${user.uid}/attendance`);
+    },
+    [firestore, user]
+  );
+  const { data: attendanceRecords } = useCollection<{ eventId: string }>(attendanceQuery);
+
+  // Create a set of event IDs user has attended
+  const attendedEventIds = useMemoFirebase(
+    () => new Set(attendanceRecords?.map(record => record.eventId) || []),
+    [attendanceRecords]
+  );
+
   // Update current time every minute to refresh event statuses
   useEffect(() => {
     const interval = setInterval(() => {
@@ -301,11 +317,20 @@ export default function AgendaPage() {
 
     } catch (e: any) {
         console.error("Transaction failed: ", e);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: e.message || 'No se pudo registrar la asistencia.',
-        });
+        
+        // Manejar error de asistencia duplicada de forma especial
+        if (e.message === "Ya has registrado tu asistencia para este evento.") {
+            toast({
+                title: 'Ya Registrado ✓',
+                description: 'Tu asistencia ya fue registrada anteriormente para este evento.',
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: e.message || 'No se pudo registrar la asistencia.',
+            });
+        }
     }
   };
 
@@ -444,6 +469,7 @@ export default function AgendaPage() {
                       event={event}
                       onViewDetails={setSelectedEvent}
                       onMarkAttendance={handleMarkAttendanceClick}
+                      hasAttended={attendedEventIds.has(event.id)}
                     />
                   </div>
                 );
