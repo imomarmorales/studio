@@ -62,8 +62,8 @@ export default function RetoFitPage() {
         .map(doc => ({
           id: doc.id,
           ...doc.data()
-        }))
-        .filter(flyer => flyer.active !== false) as RetoFitFlyer[];
+        } as RetoFitFlyer))
+        .filter(flyer => flyer.active !== false);
 
       setDisplayFlyers(flyersData);
       } catch (error) {
