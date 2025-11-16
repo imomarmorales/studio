@@ -634,7 +634,12 @@ function ManageEventsContent() {
                                     mode="single"
                                     selected={field.value}
                                     onSelect={field.onChange}
-                                    disabled={(date) => date < new Date()}
+                                    disabled={(date) => {
+                                      const yesterday = new Date();
+                                      yesterday.setDate(yesterday.getDate() - 1);
+                                      yesterday.setHours(0, 0, 0, 0);
+                                      return date < yesterday;
+                                    }}
                                     initialFocus
                                   />
                                 </PopoverContent>
