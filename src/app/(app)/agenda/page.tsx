@@ -69,10 +69,7 @@ export default function AgendaPage() {
   const { data: attendanceRecords } = useCollection<{ eventId: string }>(attendanceQuery);
 
   // Create a set of event IDs user has attended
-  const attendedEventIds = useMemoFirebase(
-    () => new Set(attendanceRecords?.map(record => record.eventId) || []),
-    [attendanceRecords]
-  );
+  const attendedEventIds = new Set(attendanceRecords?.map(record => record.eventId) || []);
 
   // Update current time every minute to refresh event statuses
   useEffect(() => {
