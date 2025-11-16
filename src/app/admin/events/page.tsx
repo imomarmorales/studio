@@ -488,25 +488,6 @@ function ManageEventsContent() {
                 />
                 
                 <div className="flex gap-2 flex-wrap">
-                  <Button 
-                    onClick={clearDatabase} 
-                    disabled={isSubmitting}
-                    variant="destructive"
-                    size="lg"
-                    className="gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Limpiando...
-                      </>
-                    ) : (
-                      <>
-                        🗑️ Limpiar Base de Datos
-                      </>
-                    )}
-                  </Button>
-                  
                   <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                     <SheetTrigger asChild>
                       <Button size="lg" className="gap-2">
