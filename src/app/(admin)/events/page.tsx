@@ -91,6 +91,7 @@ export default function ManageEventsPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [openPopover, setOpenPopover] = useState(false);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(formSchema),
@@ -363,7 +364,7 @@ export default function ManageEventsPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Ubicación *</FormLabel>
-                      <Popover>
+                      <Popover open={openPopover} onOpenChange={setOpenPopover}>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
@@ -378,17 +379,17 @@ export default function ManageEventsPage() {
                                 ? locations.find(
                                     (location) => location.value === field.value
                                   )?.label ?? field.value
-                                : "Seleccionar ubicación"}
+                                : "Seleccionar o escribir ubicación..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                           <Command>
-                            <CommandInput 
+                          <Command>
+                            <CommandInput
                               placeholder="Buscar o escribir ubicación..."
-                              value={field.value}
                               onValueChange={field.onChange}
+                              value={field.value}
                             />
                             <CommandList>
                               <CommandEmpty>No se encontró la ubicación.</CommandEmpty>
@@ -399,6 +400,7 @@ export default function ManageEventsPage() {
                                     key={location.value}
                                     onSelect={() => {
                                       form.setValue("location", location.value)
+                                      setOpenPopover(false)
                                     }}
                                   >
                                     <Check
