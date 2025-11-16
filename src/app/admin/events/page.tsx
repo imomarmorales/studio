@@ -152,6 +152,59 @@ function ManageEventsContent() {
 
   const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
+  const createQuickEvent = async () => {
+    if (!firestore) return;
+    setIsSubmitting(true);
+
+    try {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // 7pm hoy
+      const startDateTime = new Date(today);
+      startDateTime.setHours(19, 0, 0, 0);
+      
+      // 8pm hoy
+      const endDateTime = new Date(today);
+      endDateTime.setHours(20, 0, 0, 0);
+
+      const qrToken = generateQRToken(12);
+      const duration = calculateDuration(startDateTime, endDateTime);
+
+      const quickEvent: Omit<CongressEvent, 'id'> = {
+        title: 'Evento de Prueba',
+        description: 'Evento de ejemplo creado rápidamente para probar la asistencia.',
+        dateTime: startDateTime.toISOString(),
+        endDateTime: endDateTime.toISOString(),
+        location: 'Auditorio Principal',
+        imageUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM2MzY2ZjE7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4YjVjZjY7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNDUlIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkV2ZW50byBkZSBQcnVlYmE8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xOTowMCAtIDIwOjAwPC90ZXh0Pjwvc3ZnPg==',
+        pointsPerAttendance: 100,
+        qrToken: qrToken,
+        qrValid: true,
+        duration: duration,
+        speakers: ['Instructor de Prueba'],
+      };
+
+      await addDoc(collection(firestore, 'events'), quickEvent);
+
+      toast({
+        title: '🎉 Evento Rápido Creado',
+        description: `Evento de prueba para hoy 7pm-8pm creado exitosamente.`,
+      });
+
+      handleRefresh();
+    } catch (error) {
+      console.error('Error creating quick event:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo crear el evento rápido.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -299,14 +352,34 @@ function ManageEventsContent() {
                   description="Administra todos los eventos del congreso desde un solo lugar."
                 />
                 
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                  <SheetTrigger asChild>
-                    <Button size="lg" className="gap-2">
-                      <PlusCircle className="h-5 w-5" />
-                      Añadir Evento
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={createQuickEvent} 
+                    disabled={isSubmitting}
+                    variant="outline"
+                    size="lg"
+                    className="gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Creando...
+                      </>
+                    ) : (
+                      <>
+                        ⚡ Evento HOY 7pm
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                    <SheetTrigger asChild>
+                      <Button size="lg" className="gap-2">
+                        <PlusCircle className="h-5 w-5" />
+                        Añadir Evento
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
                     <SheetHeader>
                       <SheetTitle>Crear Nuevo Evento</SheetTitle>
                       <SheetDescription>
@@ -592,6 +665,7 @@ function ManageEventsContent() {
                     </Form>
                   </SheetContent>
                 </Sheet>
+                </div>
               </div>
 
               {/* Events List */}
