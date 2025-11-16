@@ -266,7 +266,20 @@ function ManageEventsContent() {
       toast({
         title: '👥 Usuarios de Prueba Creados',
         description: `${created} usuarios con diferentes puntuaciones creados exitosamente.`,
-      });\n    } catch (error) {\n      console.error('Error creating test users:', error);\n      toast({\n        variant: 'destructive',\n        title: 'Error',\n        description: 'No se pudieron crear los usuarios de prueba.',\n      });\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      });
+    } catch (error) {
+      console.error('Error creating test users:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudieron crear los usuarios de prueba.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
