@@ -250,7 +250,23 @@ function ManageEventsContent() {
 
       let created = 0;
       for (const testUser of testUsers) {
-        const userId = `test_${testUser.email.split('@')[0]}`;\n        await setDoc(doc(firestore, 'users', userId), {\n          name: testUser.name,\n          email: testUser.email,\n          points: testUser.points,\n          attendanceCount: testUser.attendanceCount,\n          badges: [],\n          role: 'participant',\n          createdAt: new Date().toISOString(),\n        });\n        created++;\n      }\n\n      toast({\n        title: '👥 Usuarios de Prueba Creados',\n        description: `${created} usuarios con diferentes puntuaciones creados exitosamente.`,\n      });\n    } catch (error) {\n      console.error('Error creating test users:', error);\n      toast({\n        variant: 'destructive',\n        title: 'Error',\n        description: 'No se pudieron crear los usuarios de prueba.',\n      });\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const userId = `test_${testUser.email.split('@')[0]}`;
+        await setDoc(doc(firestore, 'users', userId), {
+          name: testUser.name,
+          email: testUser.email,
+          points: testUser.points,
+          attendanceCount: testUser.attendanceCount,
+          badges: [],
+          role: 'participant',
+          createdAt: new Date().toISOString(),
+        });
+        created++;
+      }
+
+      toast({
+        title: '👥 Usuarios de Prueba Creados',
+        description: `${created} usuarios con diferentes puntuaciones creados exitosamente.`,
+      });\n    } catch (error) {\n      console.error('Error creating test users:', error);\n      toast({\n        variant: 'destructive',\n        title: 'Error',\n        description: 'No se pudieron crear los usuarios de prueba.',\n      });\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
