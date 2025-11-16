@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirebase, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, query, orderBy } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
 import { Calendar as CalendarIcon, Loader2, PlusCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
@@ -40,7 +40,7 @@ import {
 
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
-  description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
+  description: z.string().optional(),
   eventDate: z.date({ required_error: 'La fecha del evento es requerida.' }),
   startTime: z.string().min(1, 'La hora de inicio es requerida.'),
   endTime: z.string().optional(),
@@ -184,7 +184,7 @@ export default function ManageEventsPage() {
         qrValid: true,
         speakers: speakers.length > 0 ? speakers : undefined,
         duration: duration,
-        attendanceRules: data.attendanceRules || undefined,
+        attendanceRules: data.attendanceRules,
       };
       
       await addDoc(collection(firestore, 'events'), newEvent);
@@ -198,12 +198,12 @@ export default function ManageEventsPage() {
       removeImage();
       setIsSheetOpen(false);
       handleRefresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating event:', error);
       toast({
         variant: 'destructive',
         title: 'Error al crear el evento',
-        description: 'Hubo un problema al guardar el evento. Inténtalo de nuevo.',
+        description: error.message,
       });
     } finally {
       setIsSubmitting(false);
@@ -228,6 +228,9 @@ export default function ManageEventsPage() {
     
     return calculateDuration(start, end);
   }, [eventDate, startTime, endTime]);
+
+  const eventStartDate = new Date(2025, 10, 18); // November 18, 2025
+  const eventEndDate = new Date(2025, 10, 24); // November 24, 2025
 
   return (
     <div className="space-y-6">
@@ -327,7 +330,7 @@ export default function ManageEventsPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descripción *</FormLabel>
+                      <FormLabel>Descripción</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Describe de qué tratará el evento..." 
@@ -384,12 +387,10 @@ export default function ManageEventsPage() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => {
-                              const yesterday = new Date();
-                              yesterday.setDate(yesterday.getDate() - 1);
-                              yesterday.setHours(0, 0, 0, 0);
-                              return date < yesterday;
-                            }}
+                            disabled={(date) =>
+                                date < eventStartDate || date > eventEndDate
+                            }
+                            defaultMonth={eventStartDate}
                             initialFocus
                           />
                         </PopoverContent>

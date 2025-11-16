@@ -44,7 +44,7 @@ export default function AgendaPublicaPage() {
   const [events, setEvents] = useState<CongressEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // Obtener eventos de Firestore
@@ -126,13 +126,13 @@ export default function AgendaPublicaPage() {
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)} className="space-y-6">
           <div className="flex justify-center">
             <TabsList className="grid w-full sm:w-auto grid-cols-2">
-              <TabsTrigger value="calendar" className="gap-2">
-                <CalendarIcon className="w-4 h-4" />
-                Calendario
-              </TabsTrigger>
               <TabsTrigger value="list" className="gap-2">
                 <Clock className="w-4 h-4" />
                 Lista
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="gap-2">
+                <CalendarIcon className="w-4 h-4" />
+                Calendario
               </TabsTrigger>
             </TabsList>
           </div>
