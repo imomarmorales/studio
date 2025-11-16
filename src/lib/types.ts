@@ -16,7 +16,7 @@ export interface Participant {
 export interface CongressEvent {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   dateTime: string; // ISO 8601 format - start time
   endDateTime?: string; // ISO 8601 format - end time (optional, default +4h)
   location: string;

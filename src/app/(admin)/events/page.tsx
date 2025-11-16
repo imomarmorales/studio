@@ -40,7 +40,7 @@ import {
 
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
-  description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
+  description: z.string().optional(),
   eventDate: z.date({ required_error: 'La fecha del evento es requerida.' }),
   startTime: z.string().min(1, 'La hora de inicio es requerida.'),
   endTime: z.string().optional(),
@@ -174,7 +174,7 @@ export default function ManageEventsPage() {
       
       const newEvent: Omit<CongressEvent, 'id'> = {
         title: data.title,
-        description: data.description,
+        description: data.description || '',
         dateTime: startDateTime.toISOString(),
         endDateTime: endDateTime?.toISOString(),
         location: data.location,
@@ -327,7 +327,7 @@ export default function ManageEventsPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descripción *</FormLabel>
+                      <FormLabel>Descripción</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Describe de qué tratará el evento..." 
