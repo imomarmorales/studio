@@ -35,8 +35,12 @@ export function Hero() {
         <h1 className="text-4xl font-headline font-bold sm:text-5xl md:text-6xl drop-shadow-lg">
           Semana de la Ingeniería 2025
         </h1>
-        <p className="mt-4 text-base md:text-xl font-body text-primary-foreground/90 drop-shadow-md">
-          Facultad de Ingeniería Tampico, UAT | 18, 19 y 20 de Noviembre
+        <div className="mt-4 text-base md:text-xl font-body text-primary-foreground/90 drop-shadow-md">
+          <p className="text-3xl md:text-4xl font-bold tracking-wider">"Intersección"</p>
+          <p className="mt-2">Semana de la ingeniería Seguridad y salud ocupacional</p>
+        </div>
+        <p className="mt-4 text-sm md:text-base font-body text-primary-foreground/80 drop-shadow-md">
+          18, 19, 20, 21 y 24 de Noviembre
         </p>
         
         <div className="mt-8">
