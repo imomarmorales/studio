@@ -377,7 +377,7 @@ export default function ManageEventsPage() {
                               {field.value
                                 ? locations.find(
                                     (location) => location.value === field.value
-                                  )?.label
+                                  )?.label ?? field.value
                                 : "Seleccionar ubicación"}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -386,10 +386,9 @@ export default function ManageEventsPage() {
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                            <Command>
                             <CommandInput 
-                              placeholder="Buscar o escribir ubicación..." 
-                              onValueChange={(currentValue) => {
-                                field.onChange(currentValue);
-                              }}
+                              placeholder="Buscar o escribir ubicación..."
+                              value={field.value}
+                              onValueChange={field.onChange}
                             />
                             <CommandList>
                               <CommandEmpty>No se encontró la ubicación.</CommandEmpty>
