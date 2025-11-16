@@ -110,6 +110,7 @@ export default function PerfilPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file
     const validation = validateImageFile(file);
     if (!validation.valid) {
       toast({
@@ -122,13 +123,15 @@ export default function PerfilPage() {
 
     setIsUploading(true);
     try {
-      // Convert to base64
-      const base64 = await convertImageToBase64(file);
-      const compressed = await compressImageIfNeeded(base64);
+      // Compress file first (returns File)
+      const compressedFile = await compressImageIfNeeded(file);
+      
+      // Then convert to base64 (returns string)
+      const base64 = await convertImageToBase64(compressedFile);
 
       // Save immediately to Firestore
       if (userDocRef) {
-        await updateDoc(userDocRef, { photoURL: compressed });
+        await updateDoc(userDocRef, { photoURL: base64 });
         
         toast({
           title: '✅ Foto Actualizada',
