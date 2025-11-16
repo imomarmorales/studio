@@ -20,6 +20,13 @@ interface QrScannerDialogProps {
   onScanSuccess: (data: string) => void;
 }
 
+// Helper function to validate QR format
+function isValidEventQR(qrData: string): boolean {
+  const parts = qrData.split('|');
+  // Must have exactly 2 parts: eventId and qrToken
+  return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
+}
+
 export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScannerDialogProps) {
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -70,7 +77,14 @@ export function QrScannerDialog({ isOpen, onOpenChange, onScanSuccess }: QrScann
                 });
 
                 if (code) {
-                    // Visual feedback
+                    // Validate QR format before accepting
+                    if (!isValidEventQR(code.data)) {
+                        // Ignore invalid QR codes, keep scanning
+                        animationFrameId = requestAnimationFrame(tick);
+                        return;
+                    }
+                    
+                    // Valid QR detected - Visual feedback
                     setScanSuccess(true);
                     setIsScanning(false);
                     
