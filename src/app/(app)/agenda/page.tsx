@@ -46,7 +46,7 @@ export default function AgendaPage() {
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'grid' | 'itinerary'>('grid');
+  const [viewMode, setViewMode] = useState<'itinerary' | 'grid'>('itinerary');
   const [eventFilter, setEventFilter] = useState<'available' | 'expired'>('available');
 
   const eventsQuery = useMemoFirebase(
@@ -408,13 +408,13 @@ export default function AgendaPage() {
       {/* View Mode Tabs */}
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)} className="space-y-6">
         <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-          <TabsTrigger value="grid" className="gap-2">
-            <CalendarIcon className="w-4 h-4" />
-            Eventos
-          </TabsTrigger>
           <TabsTrigger value="itinerary" className="gap-2">
             <ListOrdered className="w-4 h-4" />
             Mi Itinerario
+          </TabsTrigger>
+          <TabsTrigger value="grid" className="gap-2">
+            <CalendarIcon className="w-4 h-4" />
+            Eventos
           </TabsTrigger>
         </TabsList>
 
