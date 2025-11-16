@@ -1,3 +1,5 @@
+'use client';
+
 import { LoginForm } from './_components/login-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FirebaseClientProvider } from '@/firebase';
