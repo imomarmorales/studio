@@ -24,7 +24,7 @@ service cloud.firestore {
     }
     
     // ============================================
-    // ADMIN TOTAL ACCESS - Acceso completo a TODO
+    // ADMIN TOTAL ACCESS - Acceso completo a TODO si no hay regla más específica
     // ============================================
     match /{document=**} {
       allow read, write: if isAdmin();
@@ -75,14 +75,11 @@ service cloud.firestore {
     // Stores congress events with details, QR codes, images
     // ============================================
     match /events/{eventId} {
-      // Public read access for agenda-publica page
-      allow get: if true;
+      // Logged-in users can read events
+      allow get, list: if isSignedIn();
       
-      // Public list access for agenda-publica page
-      allow list: if true;
-      
-      // Create/update/delete forbidden for regular users (admin ya tiene acceso)
-      allow create, update, delete: if false;
+      // Only admins can create, update, or delete events
+      allow create, update, delete: if isAdmin();
       
       // ============================================
       // ATTENDEES SUBCOLLECTION (mirror for admin queries)
