@@ -219,7 +219,7 @@ export default function SpeakersManagementPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6">
+    <div className="space-y-6">
       {/* Add Speaker Form */}
       <Card>
         <CardHeader>
@@ -439,3 +439,5 @@ export default function SpeakersManagementPage() {
 </div>
   );
 }
+
+    

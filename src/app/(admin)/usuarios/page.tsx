@@ -5,19 +5,10 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Mail, Trophy, User as UserIcon } from 'lucide-react';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  displayName?: string; // Fallback por si existe
-  points?: number;
-  role?: string;
-  createdAt?: any;
-}
+import { Participant } from '@/lib/types';
 
 export default function UsuariosPage() {
   const { firestore } = useFirebase();
@@ -25,35 +16,13 @@ export default function UsuariosPage() {
   
   const usersQuery = useMemoFirebase(
     () => {
-      if (!firestore) return null;
-      if (isUserLoading) return null; // Wait for auth to complete
-      if (!user) return null; // No user, no query
+      if (!firestore || !user) return null;
       return query(collection(firestore, 'users'), orderBy('points', 'desc'));
     },
-    [firestore, user, isUserLoading]
+    [firestore, user]
   );
   
-  const { data: usersData, isLoading: loading, error } = useCollection<User>(usersQuery);
-  
-  // Filtrar usuarios únicos por email y ordenar por puntos
-  const users = usersData ? (() => {
-    // Crear un Map para eliminar duplicados por email, manteniendo el que tenga más puntos
-    const uniqueUsersMap = new Map<string, typeof usersData[0]>();
-    
-    usersData.forEach(user => {
-      const existing = uniqueUsersMap.get(user.email);
-      if (!existing || (user.points || 0) > (existing.points || 0)) {
-        uniqueUsersMap.set(user.email, user);
-      }
-    });
-    
-    // Convertir a array y ordenar por puntos
-    return Array.from(uniqueUsersMap.values()).sort((a, b) => {
-      const pointsA = a.points || 0;
-      const pointsB = b.points || 0;
-      return pointsB - pointsA;
-    });
-  })() : null;
+  const { data: users, isLoading: loading, error } = useCollection<Participant>(usersQuery);
 
   const getInitials = (name: string) => {
     return name
@@ -64,8 +33,8 @@ export default function UsuariosPage() {
       .slice(0, 2);
   };
   
-  const getUserName = (user: User) => {
-    return user.name || user.displayName || user.email.split('@')[0];
+  const getUserName = (user: Participant) => {
+    return user.name || user.email.split('@')[0];
   };
 
   const formatDate = (timestamp: any) => {
@@ -150,6 +119,7 @@ export default function UsuariosPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
+                            <AvatarImage src={user.photoURL} alt={user.name} />
                             <AvatarFallback>
                               {getInitials(getUserName(user))}
                             </AvatarFallback>
@@ -190,3 +160,5 @@ export default function UsuariosPage() {
     </div>
   );
 }
+
+    

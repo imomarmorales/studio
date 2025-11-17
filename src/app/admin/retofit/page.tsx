@@ -242,7 +242,7 @@ export default function AdminRetoFitPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6">
+    <div className="space-y-6">
         {/* Form */}
         <Card>
           <CardHeader>
@@ -428,7 +428,7 @@ export default function AdminRetoFitPage() {
                                 </a>
                               )}
                             </div>
-                            <Badge variant={flyer.active ? 'default' : 'secondary'}>
+                            <Badge variant="outline" className="h-fit">
                               #{index + 1}
                             </Badge>
                           </div>
@@ -485,3 +485,5 @@ export default function AdminRetoFitPage() {
     </div>
   );
 }
+
+    
