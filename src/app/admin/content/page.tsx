@@ -17,6 +17,8 @@ import { Trash2, Upload, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import Image from 'next/image';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface Sponsor {
   id: string;
@@ -53,8 +55,7 @@ const eventSchema = z.object({
 type SponsorFormValues = z.infer<typeof sponsorSchema>;
 type EventFormValues = z.infer<typeof eventSchema>;
 
-
-export default function ContentManagementPage() {
+function ContentManagementContent() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
@@ -603,5 +604,22 @@ export default function ContentManagementPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function ContentManagementPage() {
+  return (
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        {/* Mobile Header with Menu Trigger */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">Contenido Principal</h1>
+        </header>
+        
+        <ContentManagementContent />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

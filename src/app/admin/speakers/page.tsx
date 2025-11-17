@@ -19,6 +19,8 @@ import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '
 import Image from 'next/image';
 import { Speaker } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 // Speaker Form Schema
 const speakerSchema = z.object({
@@ -31,7 +33,7 @@ const speakerSchema = z.object({
 
 type SpeakerFormValues = z.infer<typeof speakerSchema>;
 
-export default function SpeakersManagementPage() {
+function SpeakersManagementContent() {
   const { toast } = useToast();
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -437,5 +439,22 @@ export default function SpeakersManagementPage() {
     </CardContent>
   </Card>
 </div>
+  );
+}
+
+export default function SpeakersPage() {
+  return (
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        {/* Mobile Header with Menu Trigger */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">Gestionar Ponentes</h1>
+        </header>
+        
+        <SpeakersManagementContent />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

@@ -18,6 +18,8 @@ import { Loader2, Upload, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Image as 
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 const formSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
@@ -27,7 +29,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function AdminRetoFitPage() {
+function AdminRetoFitContent() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingFlyer, setEditingFlyer] = useState<RetoFitFlyer | null>(null);
@@ -483,5 +485,22 @@ export default function AdminRetoFitPage() {
           </CardContent>
         </Card>
     </div>
+  );
+}
+
+export default function AdminRetoFitPage() {
+  return (
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        {/* Mobile Header with Menu Trigger */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">Gestionar #RetoFIT</h1>
+        </header>
+        
+        <AdminRetoFitContent />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
