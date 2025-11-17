@@ -1,22 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import type { Participant } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
-
-function getPageTitle(pathname: string): string {
-    if (pathname.startsWith('/admin/events')) return 'Gestionar Eventos';
-    if (pathname.startsWith('/admin/usuarios')) return 'Usuarios Registrados';
-    if (pathname.startsWith('/admin/speakers')) return 'Ponentes';
-    if (pathname.startsWith('/admin/retofit')) return '#RetoFIT Flyers';
-    if (pathname.startsWith('/admin/content')) return 'Contenido Principal';
-    return 'Panel de Administración';
-}
+import { AdminHeader } from '@/components/layout/AdminHeader';
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -39,9 +30,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isUserLoading, isParticipantLoading, user, participant, router]);
 
-  const isLoading = isUserLoading || isParticipantLoading;
-
-  if (isLoading || !user || participant?.role !== 'admin') {
+  if (isUserLoading || isParticipantLoading || !user || participant?.role !== 'admin') {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -59,22 +48,15 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname);
-
   return (
     <AdminAuthGuard>
-      <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-muted/40">
         <AdminSidebar />
-        <SidebarInset>
-          {/* Mobile Header with Menu Trigger */}
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-            <SidebarTrigger className="h-10 w-10 -ml-2" />
-            <h1 className="text-lg font-semibold">{pageTitle}</h1>
-          </header>
-          <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
+        <div className="flex flex-col w-full sm:gap-4 sm:py-4 sm:pl-14">
+          <AdminHeader />
+          <main className="p-4 sm:px-6 sm:py-0">{children}</main>
+        </div>
+      </div>
     </AdminAuthGuard>
   );
 }

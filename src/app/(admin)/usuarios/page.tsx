@@ -85,12 +85,6 @@ export default function UsuariosPage() {
   if (isUserLoading || loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Usuarios Registrados</h1>
-          <p className="text-muted-foreground">
-            Gestiona y visualiza todos los usuarios del sistema
-          </p>
-        </div>
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-64" />
@@ -111,12 +105,6 @@ export default function UsuariosPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Usuarios Registrados</h1>
-          <p className="text-muted-foreground">
-            Gestiona y visualiza todos los usuarios del sistema
-          </p>
-        </div>
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Error al cargar usuarios</CardTitle>
@@ -129,13 +117,6 @@ export default function UsuariosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Usuarios Registrados</h1>
-        <p className="text-muted-foreground">
-          Gestiona y visualiza todos los usuarios del sistema
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Lista de Usuarios</CardTitle>

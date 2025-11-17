@@ -44,8 +44,10 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-2 border-b bg-background px-4 md:px-6">
-       {/* Mobile Menu Button - Always visible on small screens */}
-       <SidebarTrigger className="md:hidden h-10 w-10 -ml-2" />
+       {/* Mobile Menu Button - Only visible on small screens */}
+       <div className="md:hidden">
+          <SidebarTrigger />
+       </div>
        
        <div className="hidden md:block">
         {/* Placeholder to push content */}

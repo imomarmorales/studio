@@ -7,7 +7,6 @@ import * as z from 'zod';
 import { generateQRToken } from '@/lib/event-utils';
 import { calculateDuration } from '@/lib/event-utils';
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -249,298 +248,238 @@ export default function ManageEventsPage() {
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <PageHeader
-            title="Gestionar Eventos"
-            description="Administra todos los eventos del congreso desde un solo lugar."
-          />
-          
-          <div className="flex gap-2 flex-wrap">
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-              <SheetTrigger asChild>
-                <Button size="lg" className="gap-2">
-                  <PlusCircle className="h-5 w-5" />
-                  Añadir Evento
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Crear Nuevo Evento</SheetTitle>
-                <SheetDescription>
-                  Completa los detalles del evento. Los campos marcados con * son obligatorios.
-                </SheetDescription>
-              </SheetHeader>
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
-                  {/* Image Upload */}
-                  <FormField
-                    control={form.control}
-                    name="imageFile"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Banner del Evento</FormLabel>
-                        <FormControl>
-                          <div className="space-y-3">
-                            {imagePreview ? (
-                              <div className="relative rounded-lg overflow-hidden border-2 border-dashed border-primary">
-                                <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute top-2 right-2"
-                                  onClick={removeImage}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <div 
-                                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
-                                onClick={() => fileInputRef.current?.click()}
+      <div className="flex items-center justify-between">
+          <div className="hidden sm:block" />
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button size="lg" className="gap-2">
+                <PlusCircle className="h-5 w-5" />
+                Añadir Evento
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Crear Nuevo Evento</SheetTitle>
+              <SheetDescription>
+                Completa los detalles del evento. Los campos marcados con * son obligatorios.
+              </SheetDescription>
+            </SheetHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
+                {/* Image Upload */}
+                <FormField
+                  control={form.control}
+                  name="imageFile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Banner del Evento</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          {imagePreview ? (
+                            <div className="relative rounded-lg overflow-hidden border-2 border-dashed border-primary">
+                              <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2"
+                                onClick={removeImage}
                               >
-                                <ImageIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                                <p className="text-sm text-muted-foreground mb-1">
-                                  Haz clic para subir una imagen
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  JPG, PNG o WebP (máx. 5MB)
-                                </p>
-                              </div>
-                            )}
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleImageSelect}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Esta será la imagen principal que verán los participantes
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre del Evento *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ej. Conferencia de Inteligencia Artificial" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descripción</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Describe de qué tratará el evento..." 
-                            rows={4}
-                            {...field} 
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div 
+                              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <ImageIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                              <p className="text-sm text-muted-foreground mb-1">
+                                Haz clic para subir una imagen
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                JPG, PNG o WebP (máx. 5MB)
+                              </p>
+                            </div>
+                          )}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageSelect}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Ubicación *</FormLabel>
-                        <Popover open={openPopover} onOpenChange={setOpenPopover}>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                className={cn(
-                                  "w-full justify-between",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value
-                                  ? locations.find(
-                                      (location) => location.value === field.value
-                                    )?.label ?? field.value
-                                  : "Seleccionar o escribir ubicación..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                            <Command>
-                              <CommandInput
-                                placeholder="Buscar o escribir ubicación..."
-                                onValueChange={(value) => form.setValue("location", value)}
-                                value={field.value}
-                              />
-                              <CommandList>
-                                <CommandEmpty>No se encontró la ubicación.</CommandEmpty>
-                                <CommandGroup>
-                                  {locations.map((location) => (
-                                    <CommandItem
-                                      value={location.label}
-                                      key={location.value}
-                                      onSelect={() => {
-                                        form.setValue("location", location.value)
-                                        setOpenPopover(false)
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          location.value === field.value
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
-                                      />
-                                      {location.label}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                        <FormDescription>
-                          Puedes seleccionar una de la lista o escribir una ubicación personalizada.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="eventDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Fecha del Evento *</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd/MM/yyyy")
-                                ) : (
-                                  <span>Seleccionar fecha</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                  date < eventStartDate || date > eventEndDate
-                              }
-                              defaultMonth={eventStartDate}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="startTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hora de Inicio *</FormLabel>
-                          <FormControl>
-                            <TimeSelect 
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Seleccionar hora de inicio"
-                            />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            Selecciona hora y minutos con AM/PM
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="endTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hora de Fin</FormLabel>
-                          <FormControl>
-                            <TimeSelect 
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Seleccionar hora de fin"
-                              minTime={startTime}
-                            />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            Debe ser posterior a la hora de inicio
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {calculatedDuration && (
-                    <Alert>
-                      <AlertDescription className="flex items-center gap-2">
-                        <span className="font-semibold">Duración calculada:</span>
-                        <span>{calculatedDuration}</span>
-                      </AlertDescription>
-                    </Alert>
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Esta será la imagen principal que verán los participantes
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
                   )}
+                />
 
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre del Evento *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej. Conferencia de Inteligencia Artificial" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe de qué tratará el evento..." 
+                          rows={4}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Ubicación *</FormLabel>
+                      <Popover open={openPopover} onOpenChange={setOpenPopover}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? locations.find(
+                                    (location) => location.value === field.value
+                                  )?.label ?? field.value
+                                : "Seleccionar o escribir ubicación..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder="Buscar o escribir ubicación..."
+                              onValueChange={(value) => form.setValue("location", value)}
+                              value={field.value}
+                            />
+                            <CommandList>
+                              <CommandEmpty>No se encontró la ubicación.</CommandEmpty>
+                              <CommandGroup>
+                                {locations.map((location) => (
+                                  <CommandItem
+                                    value={location.label}
+                                    key={location.value}
+                                    onSelect={() => {
+                                      form.setValue("location", location.value)
+                                      setOpenPopover(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        location.value === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {location.label}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Puedes seleccionar una de la lista o escribir una ubicación personalizada.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="eventDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha del Evento *</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "dd/MM/yyyy")
+                              ) : (
+                                <span>Seleccionar fecha</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                                date < eventStartDate || date > eventEndDate
+                            }
+                            defaultMonth={eventStartDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="pointsPerAttendance"
+                    name="startTime"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Puntos por Asistencia *</FormLabel>
+                        <FormLabel>Hora de Inicio *</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="100" 
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 100)}
+                          <TimeSelect 
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar hora de inicio"
                           />
                         </FormControl>
-                        <FormDescription>
-                          Puntos que recibirá cada participante al asistir
+                        <FormDescription className="text-xs">
+                          Selecciona hora y minutos con AM/PM
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -549,68 +488,122 @@ export default function ManageEventsPage() {
 
                   <FormField
                     control={form.control}
-                    name="speakers"
+                    name="endTime"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Ponentes</FormLabel>
+                        <FormLabel>Hora de Fin</FormLabel>
                         <FormControl>
-                          <Input placeholder="Dr. Juan Pérez, Ing. Ana López" {...field} />
+                          <TimeSelect 
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar hora de fin"
+                            minTime={startTime}
+                          />
                         </FormControl>
-                        <FormDescription>
-                          Separados por comas
+                        <FormDescription className="text-xs">
+                          Debe ser posterior a la hora de inicio
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </div>
 
-                  <FormField
-                    control={form.control}
-                    name="attendanceRules"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Reglas de Asistencia</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Ej. Se tomará asistencia durante los primeros 15 minutos..."
-                            rows={3}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                {calculatedDuration && (
+                  <Alert>
+                    <AlertDescription className="flex items-center gap-2">
+                      <span className="font-semibold">Duración calculada:</span>
+                      <span>{calculatedDuration}</span>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="pointsPerAttendance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Puntos por Asistencia *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="100" 
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 100)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Puntos que recibirá cada participante al asistir
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="speakers"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ponentes</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Dr. Juan Pérez, Ing. Ana López" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Separados por comas
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="attendanceRules"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reglas de Asistencia</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Ej. Se tomará asistencia durante los primeros 15 minutos..."
+                          rows={3}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      setIsSheetOpen(false);
+                      form.reset();
+                      removeImage();
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="flex-1 gap-2">
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <PlusCircle className="h-4 w-4" />
                     )}
-                  />
-
-                  <div className="flex gap-3 pt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => {
-                        setIsSheetOpen(false);
-                        form.reset();
-                        removeImage();
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting} className="flex-1 gap-2">
-                      {isSubmitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <PlusCircle className="h-4 w-4" />
-                      )}
-                      <span>{isSubmitting ? 'Creando...' : 'Crear Evento'}</span>
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </SheetContent>
-          </Sheet>
-          </div>
-        </div>
-
+                    <span>{isSubmitting ? 'Creando...' : 'Crear Evento'}</span>
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </SheetContent>
+        </Sheet>
+      </div>
+      
+      <div className="mt-6">
         {/* Events List */}
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -641,7 +634,7 @@ export default function ManageEventsPage() {
         )}
 
         {!isLoading && events && events.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {events.map((event) => (
               <EventCard
                 key={event.id}
@@ -653,6 +646,7 @@ export default function ManageEventsPage() {
             ))}
           </div>
         )}
+      </div>
       
       <EventEditDialog
         event={selectedEventForEdit}
@@ -671,7 +665,6 @@ export default function ManageEventsPage() {
         isOpen={!!selectedEventForAttendees}
         onOpenChange={() => setSelectedEventForAttendees(null)}
       />
-      </div>
     </>
   );
 }
