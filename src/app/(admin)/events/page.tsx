@@ -247,7 +247,7 @@ export default function ManageEventsPage() {
   const eventEndDate = new Date(2025, 10, 24); // November 24, 2025
 
   return (
-    <>
+    <div>
       <div className="flex items-center justify-between">
           <div className="hidden sm:block" />
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -665,6 +665,6 @@ export default function ManageEventsPage() {
         isOpen={!!selectedEventForAttendees}
         onOpenChange={() => setSelectedEventForAttendees(null)}
       />
-    </>
+    </div>
   );
 }
