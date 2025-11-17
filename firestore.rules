@@ -75,8 +75,8 @@ service cloud.firestore {
     // Stores congress events with details, QR codes, images
     // ============================================
     match /events/{eventId} {
-      // Logged-in users can read events
-      allow get, list: if isSignedIn();
+      // Public read access for agenda-publica page
+      allow get, list: if true;
       
       // Only admins can create, update, or delete events
       allow create, update, delete: if isAdmin();
