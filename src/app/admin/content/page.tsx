@@ -13,12 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Upload, Loader2, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Trash2, Upload, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import Image from 'next/image';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface Sponsor {
   id: string;
@@ -55,25 +53,8 @@ const eventSchema = z.object({
 type SponsorFormValues = z.infer<typeof sponsorSchema>;
 type EventFormValues = z.infer<typeof eventSchema>;
 
-function AdminAuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
-  
-  if (isUserLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
-  if (!user) {
-    return null;
-  }
-
-  return <>{children}</>;
-}
-
-function ContentManagementContent() {
+export default function ContentManagementPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
@@ -293,14 +274,7 @@ function ContentManagementContent() {
   };
 
   return (
-    <div className="space-y-6 p-4 sm:p-0">
-      <div>
-        <h1 className="text-3xl font-bold">Gestión de Contenido</h1>
-        <p className="text-muted-foreground">
-          Administra patrocinadores y eventos destacados de la página principal
-        </p>
-      </div>
-
+    <div className="space-y-6">
       <Tabs defaultValue="sponsors" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sponsors">Patrocinadores</TabsTrigger>
@@ -629,24 +603,5 @@ function ContentManagementContent() {
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-export default function ContentManagementPage() {
-  return (
-    <AdminAuthGuard>
-      <SidebarProvider>
-        <AdminSidebar />
-        <SidebarInset>
-          {/* Mobile Header */}
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-            <SidebarTrigger className="h-10 w-10 -ml-2" />
-            <h1 className="text-lg font-semibold">Contenido Principal</h1>
-          </header>
-          
-          <ContentManagementContent />
-        </SidebarInset>
-      </SidebarProvider>
-    </AdminAuthGuard>
   );
 }

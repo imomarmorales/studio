@@ -606,7 +606,7 @@ export default function ManageEventsPage() {
       <div className="mt-6">
         {/* Events List */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="overflow-hidden rounded-lg border">
                 <Skeleton className="h-40 w-full" />

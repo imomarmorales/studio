@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc, query, orderBy, doc, updateDoc, deleteDoc, getDocs, getFirestore } from 'firebase/firestore';
@@ -16,10 +14,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 import type { RetoFitFlyer } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Upload, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -247,256 +242,246 @@ export default function AdminRetoFitPage() {
   };
 
   return (
-    <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-          <SidebarTrigger className="h-10 w-10 -ml-2" />
-          <h1 className="text-lg font-semibold">#RetoFIT Flyers</h1>
-        </header>
+    <div className="flex-1 space-y-6">
+        {/* Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingFlyer ? 'Editar Flyer' : 'Crear Nuevo Flyer'}</CardTitle>
+            <CardDescription>
+              {editingFlyer ? 'Modifica la información del flyer' : 'Agrega un nuevo flyer para #RetoFIT'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Image Upload */}
+                  <div className="space-y-2">
+                    <FormLabel>Imagen del Flyer</FormLabel>
+                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                      {imagePreview ? (
+                        <div className="space-y-2">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="mx-auto max-h-48 rounded-md object-contain"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setImageFile(null);
+                              setImagePreview(null);
+                            }}
+                          >
+                            Cambiar Imagen
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Selecciona una imagen (máx. 500KB)
+                          </p>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="cursor-pointer"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-        <div className="flex-1 space-y-6 p-4 md:p-6 lg:p-8">
-          {/* Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{editingFlyer ? 'Editar Flyer' : 'Crear Nuevo Flyer'}</CardTitle>
-              <CardDescription>
-                {editingFlyer ? 'Modifica la información del flyer' : 'Agrega un nuevo flyer para #RetoFIT'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Image Upload */}
-                    <div className="space-y-2">
-                      <FormLabel>Imagen del Flyer</FormLabel>
-                      <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                        {imagePreview ? (
-                          <div className="space-y-2">
-                            <img
-                              src={imagePreview}
-                              alt="Preview"
-                              className="mx-auto max-h-48 rounded-md object-contain"
+                  {/* Form Fields */}
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej: Inscríbete a la Carrera 5K" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="link"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Link (Opcional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://..." {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Link externo para más información
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="active"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Visible</FormLabel>
+                            <FormDescription>
+                              Mostrar este flyer en la página de RetoFIT
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
                             />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingFlyer ? 'Actualizar' : 'Crear'} Flyer
+                  </Button>
+                  {editingFlyer && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingFlyer(null);
+                        form.reset();
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+
+        {/* Flyers List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Flyers Existentes</CardTitle>
+            <CardDescription>
+              {flyers?.length || 0} flyer(s) registrado(s)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading && (
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            )}
+
+            {!isLoading && flyers.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                No hay flyers registrados. Crea el primero arriba.
+              </p>
+            )}
+
+            {!isLoading && flyers.length > 0 && (
+              <div className="space-y-4">
+                {flyers.map((flyer, index) => (
+                  <Card key={flyer.id} className={!flyer.active ? 'opacity-50' : ''}>
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        {/* Image */}
+                        <img
+                          src={flyer.image}
+                          alt={flyer.title}
+                          className="w-32 h-32 object-cover rounded-md flex-shrink-0"
+                        />
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="font-semibold text-lg">{flyer.title}</h3>
+                              {flyer.link && (
+                                <a
+                                  href={flyer.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline"
+                                >
+                                  {flyer.link}
+                                </a>
+                              )}
+                            </div>
+                            <Badge variant={flyer.active ? 'default' : 'secondary'}>
+                              #{index + 1}
+                            </Badge>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 mt-3">
                             <Button
-                              type="button"
-                              variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setImageFile(null);
-                                setImagePreview(null);
-                              }}
+                              variant="outline"
+                              onClick={() => setEditingFlyer(flyer)}
                             >
-                              Cambiar Imagen
+                              Editar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleToggleActive(flyer)}
+                            >
+                              {flyer.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => moveFlyer(flyer, 'up')}
+                              disabled={index === 0}
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => moveFlyer(flyer, 'down')}
+                              disabled={index === flyers.length - 1}
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(flyer.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">
-                              Selecciona una imagen (máx. 500KB)
-                            </p>
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleImageChange}
-                              className="cursor-pointer"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Form Fields */}
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Título</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ej: Inscríbete a la Carrera 5K" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="link"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Link (Opcional)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://..." {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Link externo para más información
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="active"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                            <div className="space-y-0.5">
-                              <FormLabel>Visible</FormLabel>
-                              <FormDescription>
-                                Mostrar este flyer en la página de RetoFIT
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {editingFlyer ? 'Actualizar' : 'Crear'} Flyer
-                    </Button>
-                    {editingFlyer && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingFlyer(null);
-                          form.reset();
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Flyers List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Flyers Existentes</CardTitle>
-              <CardDescription>
-                {flyers?.length || 0} flyer(s) registrado(s)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading && (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-32 w-full" />
-                  ))}
-                </div>
-              )}
-
-              {!isLoading && flyers.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No hay flyers registrados. Crea el primero arriba.
-                </p>
-              )}
-
-              {!isLoading && flyers.length > 0 && (
-                <div className="space-y-4">
-                  {flyers.map((flyer, index) => (
-                    <Card key={flyer.id} className={!flyer.active ? 'opacity-50' : ''}>
-                      <CardContent className="p-4">
-                        <div className="flex gap-4">
-                          {/* Image */}
-                          <img
-                            src={flyer.image}
-                            alt={flyer.title}
-                            className="w-32 h-32 object-cover rounded-md flex-shrink-0"
-                          />
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h3 className="font-semibold text-lg">{flyer.title}</h3>
-                                {flyer.link && (
-                                  <a
-                                    href={flyer.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:underline"
-                                  >
-                                    {flyer.link}
-                                  </a>
-                                )}
-                              </div>
-                              <Badge variant={flyer.active ? 'default' : 'secondary'}>
-                                #{index + 1}
-                              </Badge>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-2 mt-3">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditingFlyer(flyer)}
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleToggleActive(flyer)}
-                              >
-                                {flyer.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => moveFlyer(flyer, 'up')}
-                                disabled={index === 0}
-                              >
-                                <ChevronUp className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => moveFlyer(flyer, 'down')}
-                                disabled={index === flyers.length - 1}
-                              >
-                                <ChevronDown className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDelete(flyer.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+    </div>
   );
 }
