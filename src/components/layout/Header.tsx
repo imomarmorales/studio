@@ -11,7 +11,6 @@ import Image from "next/image";
 
 const navLinks = [
   { href: "/agenda-publica", label: "Agenda" },
-  { href: "/ponentes-publicos", label: "Ponentes" },
   { href: "/reto-fit", label: "#RetoFIT" },
 ];
 
