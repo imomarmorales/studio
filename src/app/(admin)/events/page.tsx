@@ -668,5 +668,3 @@ export default function ManageEventsPage() {
     </div>
   );
 }
-
-    
