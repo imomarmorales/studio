@@ -7,7 +7,6 @@ import * as z from 'zod';
 import { generateQRToken } from '@/lib/event-utils';
 import { calculateDuration } from '@/lib/event-utils';
 import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '@/lib/upload-image';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, query, orderBy } from 'firebase/firestore';
 import type { CongressEvent } from '@/lib/types';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Upload, X, Image as ImageIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -37,6 +36,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+
 
 const formSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres.'),
@@ -66,7 +76,12 @@ const formSchema = z.object({
 
 type EventFormValues = z.infer<typeof formSchema>;
 
-export default function ManageEventsPage() {
+const locations = [
+  { value: "Auditorio \"Enrique Collado Sámano\"", label: "Auditorio \"Enrique Collado Sámano\"" },
+  { value: "Auditorio Interactivo FIT", label: "Auditorio Interactivo FIT" },
+]
+
+function ManageEventsContent() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,6 +92,7 @@ export default function ManageEventsPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [openPopover, setOpenPopover] = useState(false);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(formSchema),
@@ -234,13 +250,8 @@ export default function ManageEventsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeader
-          title="Gestionar Eventos"
-          description="Administra todos los eventos del congreso desde un solo lugar."
-        />
-        
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex items-center justify-between">
+          <div className="hidden sm:block" />
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button size="lg" className="gap-2">
@@ -342,16 +353,71 @@ export default function ManageEventsPage() {
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
                   control={form.control}
                   name="location"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Ubicación *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej. Auditorio Principal - Edificio A" {...field} />
-                      </FormControl>
+                      <Popover open={openPopover} onOpenChange={setOpenPopover}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? locations.find(
+                                    (location) => location.value === field.value
+                                  )?.label ?? field.value
+                                : "Seleccionar o escribir ubicación..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder="Buscar o escribir ubicación..."
+                              onValueChange={(value) => form.setValue("location", value)}
+                              value={field.value}
+                            />
+                            <CommandList>
+                              <CommandEmpty>No se encontró la ubicación.</CommandEmpty>
+                              <CommandGroup>
+                                {locations.map((location) => (
+                                  <CommandItem
+                                    value={location.label}
+                                    key={location.value}
+                                    onSelect={() => {
+                                      form.setValue("location", location.value)
+                                      setOpenPopover(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        location.value === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {location.label}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Puedes seleccionar una de la lista o escribir una ubicación personalizada.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -537,69 +603,87 @@ export default function ManageEventsPage() {
             </Form>
           </SheetContent>
         </Sheet>
-        </div>
       </div>
-
-      {/* Events List */}
-      {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="overflow-hidden rounded-lg border">
-              <Skeleton className="h-40 w-full" />
-              <div className="p-4 space-y-3">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-1/2" />
+      
+      <div className="mt-6">
+        {/* Events List */}
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="overflow-hidden rounded-lg border">
+                <Skeleton className="h-40 w-full" />
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>Error al cargar eventos</AlertTitle>
-          <AlertDescription>
-            No se pudieron cargar los eventos. Por favor, intenta de nuevo.
-          </AlertDescription>
-        </Alert>
-      )}
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Error al cargar eventos</AlertTitle>
+            <AlertDescription>
+              No se pudieron cargar los eventos. Por favor, intenta de nuevo.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {!isLoading && events && events.length === 0 && (
-        <EmptyState onCreateEvent={() => setIsSheetOpen(true)} />
-      )}
+        {!isLoading && events && events.length === 0 && (
+          <EmptyState onCreateEvent={() => setIsSheetOpen(true)} />
+        )}
 
-      {!isLoading && events && events.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onEdit={setSelectedEventForEdit}
-              onQrManagement={setSelectedEventForQr}
-              onViewAttendees={setSelectedEventForAttendees}
-            />
-          ))}
-        </div>
-      )}
-    
-    <EventEditDialog
-      event={selectedEventForEdit}
-      isOpen={!!selectedEventForEdit}
-      onOpenChange={() => setSelectedEventForEdit(null)}
-      onEventUpdated={handleRefresh}
-    />
-    <EventQrManagementDialog
-      event={selectedEventForQr}
-      isOpen={!!selectedEventForQr}
-      onOpenChange={() => setSelectedEventForQr(null)}
-      onEventUpdated={handleRefresh}
-    />
-    <EventAttendeesDialog
-      event={selectedEventForAttendees}
-      isOpen={!!selectedEventForAttendees}
-      onOpenChange={() => setSelectedEventForAttendees(null)}
-    />
+        {!isLoading && events && events.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {events.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onEdit={setSelectedEventForEdit}
+                onQrManagement={setSelectedEventForQr}
+                onViewAttendees={setSelectedEventForAttendees}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <EventEditDialog
+        event={selectedEventForEdit}
+        isOpen={!!selectedEventForEdit}
+        onOpenChange={() => setSelectedEventForEdit(null)}
+        onEventUpdated={handleRefresh}
+      />
+      <EventQrManagementDialog
+        event={selectedEventForQr}
+        isOpen={!!selectedEventForQr}
+        onOpenChange={() => setSelectedEventForQr(null)}
+        onEventUpdated={handleRefresh}
+      />
+      <EventAttendeesDialog
+        event={selectedEventForAttendees}
+        isOpen={!!selectedEventForAttendees}
+        onOpenChange={() => setSelectedEventForAttendees(null)}
+      />
     </div>
+  );
+}
+
+export default function ManageEventsPage() {
+  return (
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        {/* Mobile Header with Menu Trigger */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">Gestionar Eventos</h1>
+        </header>
+        
+        <ManageEventsContent />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
