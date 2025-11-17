@@ -22,8 +22,20 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 const formSchema = z.object({
@@ -60,6 +72,8 @@ export function LoginForm() {
   const auth = useAuth();
   const { firestore } = useFirebase();
   const { isUserLoading } = useUser();
+  const [isResettingPassword, setIsResettingPassword] = React.useState(false);
+  const [resetEmail, setResetEmail] = React.useState('');
 
   const currentSchema = isRegistering ? registrationSchema : loginSchema;
 
@@ -72,6 +86,30 @@ export function LoginForm() {
       password: '',
     },
   });
+
+  const handlePasswordReset = async () => {
+    if (!auth || !resetEmail) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Por favor, introduce un correo válido.' });
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast({
+        title: 'Correo Enviado',
+        description: 'Se ha enviado un enlace para restablecer tu contraseña a tu correo electrónico.',
+      });
+      setIsResettingPassword(false);
+      setResetEmail('');
+    } catch (error: any) {
+      console.error('Error sending password reset email:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo enviar el correo de restablecimiento. Verifica que el correo sea correcto.',
+      });
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof currentSchema>) {
     if (!auth || !firestore) {
@@ -166,103 +204,142 @@ export function LoginForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {isRegistering && (
-          <>
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-                📝 Tu nombre completo es importante
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                Será usado para el pase de lista en los eventos del congreso.
-              </p>
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {isRegistering && (
+            <>
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                  📝 Tu nombre completo es importante
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                  Será usado para el pase de lista en los eventos del congreso.
+                </p>
+              </div>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre(s) *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Juan Carlos" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Apellidos *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="García López" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Correo Institucional {isRegistering && '*'}</FormLabel>
+                <FormControl>
+                  <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
+                </FormControl>
+                {isRegistering && (
+                  <p className="text-xs text-muted-foreground">
+                    Debe ser tu correo institucional @alumnos.uat.edu.mx
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contraseña</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                {isRegistering && (
+                  <p className="text-xs text-muted-foreground">
+                    Mínimo 6 caracteres
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {!isRegistering && (
+            <div className="text-right">
+              <Button
+                type="button"
+                variant="link"
+                className="p-0 h-auto text-xs"
+                onClick={() => setIsResettingPassword(true)}
+              >
+                ¿Olvidaste tu contraseña?
+              </Button>
             </div>
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre(s) *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Juan Carlos" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Apellidos *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="García López" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </>
-        )}
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Correo Institucional {isRegistering && '*'}</FormLabel>
-              <FormControl>
-                <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
-              </FormControl>
-              {isRegistering && (
-                <p className="text-xs text-muted-foreground">
-                  Debe ser tu correo institucional @alumnos.uat.edu.mx
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
           )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contraseña</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              {isRegistering && (
-                <p className="text-xs text-muted-foreground">
-                  Mínimo 6 caracteres
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting || isUserLoading}
-        >
-          {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
-        </Button>
-        <Button
-          type="button"
-          variant="link"
-          className="w-full"
-          onClick={() => {
-            setIsRegistering(!isRegistering);
-            form.reset();
-          }}
-        >
-          {isRegistering
-            ? '¿Ya tienes una cuenta? Inicia sesión'
-            : '¿No tienes cuenta? Regístrate'}
-        </Button>
-      </form>
-    </Form>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.formState.isSubmitting || isUserLoading}
+          >
+            {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
+          </Button>
+          <Button
+            type="button"
+            variant="link"
+            className="w-full"
+            onClick={() => {
+              setIsRegistering(!isRegistering);
+              form.reset();
+            }}
+          >
+            {isRegistering
+              ? '¿Ya tienes una cuenta? Inicia sesión'
+              : '¿No tienes cuenta? Regístrate'}
+          </Button>
+        </form>
+      </Form>
+
+      <AlertDialog open={isResettingPassword} onOpenChange={setIsResettingPassword}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restablecer Contraseña</AlertDialogTitle>
+            <AlertDialogDescription>
+              Introduce tu correo electrónico para recibir un enlace de restablecimiento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reset-email">Correo electrónico</Label>
+            <Input
+              id="reset-email"
+              type="email"
+              placeholder="tu-correo@alumnos.uat.edu.mx"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePasswordReset}>Enviar Correo</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
