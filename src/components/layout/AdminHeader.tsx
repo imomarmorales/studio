@@ -1,49 +1,46 @@
 'use client';
 
-import { Menu, Search } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
-import { Input } from '../ui/input';
+import { usePathname } from 'next/navigation';
 
 export function AdminHeader() {
   const pathname = usePathname();
 
-  const getPageTitle = (path: string) => {
-    if (path.startsWith('/admin/events')) return 'Gestionar Eventos';
-    if (path.startsWith('/admin/speakers')) return 'Ponentes';
-    if (path.startsWith('/admin/retofit')) return '#RetoFIT';
-    if (path.startsWith('/admin/usuarios')) return 'Usuarios';
-    if (path.startsWith('/admin/content')) return 'Contenido Principal';
-    return 'Panel de Administración';
+  const getPageTitle = () => {
+    switch (true) {
+      case pathname.startsWith('/admin/events'):
+        return 'Gestionar Eventos';
+      case pathname.startsWith('/admin/usuarios'):
+        return 'Usuarios Registrados';
+      case pathname.startsWith('/admin/speakers'):
+        return 'Gestionar Ponentes';
+      case pathname.startsWith('/admin/content'):
+        return 'Contenido Principal';
+      case pathname.startsWith('/admin/retofit'):
+        return 'Flyers de #RetoFIT';
+      default:
+        return 'Panel de Administración';
+    }
   };
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-      <Sheet>
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+       <Sheet>
         <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0 md:hidden"
-          >
+          <Button size="icon" variant="outline" className="sm:hidden">
             <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle navigation menu</span>
+            <span className="sr-only">Abrir menú</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col p-0">
-          <AdminSidebar />
+        <SheetContent side="left" className="sm:max-w-xs p-0">
+            <AdminSidebar />
         </SheetContent>
       </Sheet>
-
-      <div className="w-full flex-1">
-        <h1 className="font-semibold text-lg">{getPageTitle(pathname)}</h1>
+      <div className="flex-1">
+        <h1 className="font-semibold text-xl">{getPageTitle()}</h1>
       </div>
     </header>
   );
