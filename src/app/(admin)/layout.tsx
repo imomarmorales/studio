@@ -8,7 +8,7 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset } from '@/components/ui/sidebar';
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -51,12 +51,7 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AdminSidebar />
       <SidebarInset>
-        {/* Mobile Header with Menu Trigger */}
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-          <SidebarTrigger className="h-10 w-10 -ml-2" />
-          <h1 className="text-lg font-semibold">Panel de Admin</h1>
-        </header>
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="p-0 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

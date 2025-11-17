@@ -8,20 +8,23 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Mail, Trophy, User as UserIcon } from 'lucide-react';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface User {
+  id: string;
   email: string;
-  displayName: string;
+  name: string;
+  displayName?: string; // Fallback por si existe
   points?: number;
   role?: string;
   createdAt?: any;
 }
 
-export default function UsuariosPage() {
+function UsuariosContent() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   
-  // Don't create query until user is loaded and authenticated
   const usersQuery = useMemoFirebase(
     () => {
       if (!firestore) return null;
@@ -32,7 +35,27 @@ export default function UsuariosPage() {
     [firestore, user, isUserLoading]
   );
   
-  const { data: users, isLoading: loading, error } = useCollection<User>(usersQuery);
+  const { data: usersData, isLoading: loading, error } = useCollection<User>(usersQuery);
+  
+  // Filtrar usuarios únicos por email y ordenar por puntos
+  const users = usersData ? (() => {
+    // Crear un Map para eliminar duplicados por email, manteniendo el que tenga más puntos
+    const uniqueUsersMap = new Map<string, typeof usersData[0]>();
+    
+    usersData.forEach(user => {
+      const existing = uniqueUsersMap.get(user.email);
+      if (!existing || (user.points || 0) > (existing.points || 0)) {
+        uniqueUsersMap.set(user.email, user);
+      }
+    });
+    
+    // Convertir a array y ordenar por puntos
+    return Array.from(uniqueUsersMap.values()).sort((a, b) => {
+      const pointsA = a.points || 0;
+      const pointsB = b.points || 0;
+      return pointsB - pointsA;
+    });
+  })() : null;
 
   const getInitials = (name: string) => {
     return name
@@ -41,6 +64,10 @@ export default function UsuariosPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+  
+  const getUserName = (user: User) => {
+    return user.name || user.displayName || user.email.split('@')[0];
   };
 
   const formatDate = (timestamp: any) => {
@@ -103,7 +130,7 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-0">
       <div>
         <h1 className="text-3xl font-bold">Usuarios Registrados</h1>
         <p className="text-muted-foreground">
@@ -125,38 +152,38 @@ export default function UsuariosPage() {
               <p>No hay usuarios registrados aún.</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[60px]">#</TableHead>
-                    <TableHead>Usuario</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Puntos</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Fecha de Registro</TableHead>
+                    <TableHead className="min-w-[200px]">Usuario</TableHead>
+                    <TableHead className="min-w-[250px]">Email</TableHead>
+                    <TableHead className="text-center min-w-[100px]">Puntos</TableHead>
+                    <TableHead className="min-w-[100px]">Rol</TableHead>
+                    <TableHead className="min-w-[150px]">Fecha de Registro</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((user, index) => (
-                    <TableRow key={user.email}>
+                    <TableRow key={user.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarFallback>
-                              {getInitials(user.displayName || user.email)}
+                              {getInitials(getUserName(user))}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{user.displayName}</div>
+                            <div className="font-medium">{getUserName(user)}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Mail className="h-4 w-4" />
-                          {user.email}
+                          <span className="truncate max-w-[200px]">{user.email}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -182,5 +209,22 @@ export default function UsuariosPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function UsuariosPage() {
+  return (
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        {/* Mobile Header with Menu Trigger */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">Usuarios Registrados</h1>
+        </header>
+        
+        <UsuariosContent />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

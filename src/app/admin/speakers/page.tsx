@@ -225,14 +225,9 @@ export default function SpeakersManagementPage() {
     <SidebarProvider>
       <AdminSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex-1">
-            <PageHeader
-              title="Gestión de Ponentes"
-              description="Administra los ponentes que se mostrarán en la página pública"
-            />
-          </div>
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">Gestión de Ponentes</h1>
         </header>
 
         <div className="flex-1 space-y-6 p-4 md:p-6 lg:p-8">
