@@ -19,6 +19,7 @@ import { convertImageToBase64, compressImageIfNeeded, validateImageFile } from '
 import Image from 'next/image';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AdminHeader } from '@/components/layout/AdminHeader';
 
 interface Sponsor {
   id: string;
@@ -62,6 +63,7 @@ function ContentManagementContent() {
   const [sponsorImagePreview, setSponsorImagePreview] = useState<string | null>(null);
   const [eventImagePreview, setEventImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const sponsorFileRef = useRef<HTMLInputElement>(null);
   const eventFileRef = useRef<HTMLInputElement>(null);
 
@@ -80,26 +82,24 @@ function ContentManagementContent() {
     },
   });
 
+  const forceRefresh = () => setRefreshKey(k => k + 1);
+
   // Queries
   const sponsorsQuery = useMemoFirebase(
     () => {
       if (!firestore) return null;
-      if (isUserLoading) return null;
-      if (!user) return null;
       return query(collection(firestore, 'sponsors'), orderBy('order', 'asc'));
     },
-    [firestore, user, isUserLoading]
+    [firestore, refreshKey]
   );
   const { data: sponsors } = useCollection<Sponsor>(sponsorsQuery);
 
   const eventsQuery = useMemoFirebase(
     () => {
       if (!firestore) return null;
-      if (isUserLoading) return null;
-      if (!user) return null;
       return query(collection(firestore, 'featuredEvents'), orderBy('order', 'asc'));
     },
-    [firestore, user, isUserLoading]
+    [firestore, refreshKey]
   );
   const { data: featuredEvents } = useCollection<FeaturedEvent>(eventsQuery);
 
@@ -159,6 +159,7 @@ function ContentManagementContent() {
       sponsorForm.reset();
       setSponsorImagePreview(null);
       if (sponsorFileRef.current) sponsorFileRef.current.value = '';
+      forceRefresh();
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -178,6 +179,7 @@ function ContentManagementContent() {
         title: 'Patrocinador eliminado',
         description: 'El patrocinador ha sido eliminado.',
       });
+      forceRefresh();
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -246,6 +248,7 @@ function ContentManagementContent() {
       eventForm.reset();
       setEventImagePreview(null);
       if (eventFileRef.current) eventFileRef.current.value = '';
+      forceRefresh();
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -265,6 +268,7 @@ function ContentManagementContent() {
         title: 'Evento eliminado',
         description: 'El evento destacado ha sido eliminado.',
       });
+      forceRefresh();
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -617,8 +621,9 @@ export default function ContentManagementPage() {
           <SidebarTrigger className="h-10 w-10 -ml-2" />
           <h1 className="text-lg font-semibold">Contenido Principal</h1>
         </header>
-        
-        <ContentManagementContent />
+        <div className="p-4 sm:p-6 lg:p-8">
+          <ContentManagementContent />
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

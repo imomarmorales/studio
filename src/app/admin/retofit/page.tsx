@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,9 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, query, orderBy, doc, updateDoc, deleteDoc, getDocs, getFirestore } from 'firebase/firestore';
-import { initializeApp, getApps } from 'firebase/app';
-import { firebaseConfig } from '@/firebase/config';
+import { collection, addDoc, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { RetoFitFlyer } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Upload, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
@@ -20,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { AdminHeader } from '@/components/layout/AdminHeader';
 
 const formSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres.'),
@@ -31,12 +31,12 @@ type FormData = z.infer<typeof formSchema>;
 
 function AdminRetoFitContent() {
   const { toast } = useToast();
+  const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingFlyer, setEditingFlyer] = useState<RetoFitFlyer | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [flyers, setFlyers] = useState<RetoFitFlyer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -47,33 +47,13 @@ function AdminRetoFitContent() {
     },
   });
 
-  // Cargar flyers
-  const loadFlyers = async () => {
-    try {
-      if (!getApps().length) {
-        initializeApp(firebaseConfig);
-      }
-      const db = getFirestore();
-      const flyersRef = collection(db, 'retofit_flyers');
-      const q = query(flyersRef, orderBy('order', 'asc'));
-      const snapshot = await getDocs(q);
-      
-      const flyersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as RetoFitFlyer[];
-      
-      setFlyers(flyersData);
-    } catch (error) {
-      console.error('Error loading flyers:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const forceRefresh = () => setRefreshKey(k => k + 1);
 
-  useEffect(() => {
-    loadFlyers();
-  }, []);
+  const flyersQuery = useMemoFirebase(
+    () => firestore ? query(collection(firestore, 'retofit_flyers'), orderBy('order', 'asc')) : null,
+    [firestore, refreshKey]
+  );
+  const { data: flyers, isLoading } = useCollection<RetoFitFlyer>(flyersQuery);
 
   useEffect(() => {
     if (editingFlyer) {
@@ -91,7 +71,10 @@ function AdminRetoFitContent() {
     if (!file) return;
 
     try {
-      validateImageFile(file);
+      const validation = validateImageFile(file);
+      if (!validation.valid && validation.error) {
+        throw new Error(validation.error);
+      }
       const compressedFile = await compressImageIfNeeded(file);
       const base64 = await convertImageToBase64(compressedFile);
       
@@ -107,6 +90,7 @@ function AdminRetoFitContent() {
   };
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
+    if (!firestore) return;
     if (!imagePreview && !editingFlyer) {
       toast({
         variant: 'destructive',
@@ -119,40 +103,35 @@ function AdminRetoFitContent() {
     setIsSubmitting(true);
 
     try {
-      if (!getApps().length) {
-        initializeApp(firebaseConfig);
-      }
-      const db = getFirestore();
-
       const flyerData = {
         title: data.title,
         description: '', // No usamos descripción
         link: data.link || '',
         active: data.active,
         image: imagePreview || editingFlyer?.image || '',
-        order: editingFlyer?.order || flyers.length + 1,
+        order: editingFlyer?.order ?? (flyers?.length || 0),
       };
 
       if (editingFlyer) {
-        const flyerRef = doc(db, 'retofit_flyers', editingFlyer.id);
+        const flyerRef = doc(firestore, 'retofit_flyers', editingFlyer.id);
         await updateDoc(flyerRef, flyerData);
         toast({
           title: 'Flyer actualizado',
           description: 'El flyer se ha actualizado correctamente.',
         });
       } else {
-        await addDoc(collection(db, 'retofit_flyers'), flyerData);
+        await addDoc(collection(firestore, 'retofit_flyers'), flyerData);
         toast({
           title: 'Flyer creado',
           description: 'El flyer se ha creado correctamente.',
         });
       }
 
-      form.reset();
+      form.reset({ title: '', link: '', active: true });
       setImageFile(null);
       setImagePreview(null);
       setEditingFlyer(null);
-      loadFlyers(); // Recargar lista
+      forceRefresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -165,20 +144,16 @@ function AdminRetoFitContent() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!firestore) return;
     if (!confirm('¿Estás seguro de eliminar este flyer?')) return;
 
     try {
-      if (!getApps().length) {
-        initializeApp(firebaseConfig);
-      }
-      const db = getFirestore();
-      
-      await deleteDoc(doc(db, 'retofit_flyers', id));
+      await deleteDoc(doc(firestore, 'retofit_flyers', id));
       toast({
         title: 'Flyer eliminado',
         description: 'El flyer se ha eliminado correctamente.',
       });
-      loadFlyers(); // Recargar lista
+      forceRefresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -189,19 +164,15 @@ function AdminRetoFitContent() {
   };
 
   const handleToggleActive = async (flyer: RetoFitFlyer) => {
+    if (!firestore) return;
     try {
-      if (!getApps().length) {
-        initializeApp(firebaseConfig);
-      }
-      const db = getFirestore();
-      
-      const flyerRef = doc(db, 'retofit_flyers', flyer.id);
+      const flyerRef = doc(firestore, 'retofit_flyers', flyer.id);
       await updateDoc(flyerRef, { active: !flyer.active });
       toast({
         title: flyer.active ? 'Flyer ocultado' : 'Flyer activado',
         description: `El flyer ahora está ${!flyer.active ? 'visible' : 'oculto'}.`,
       });
-      loadFlyers(); // Recargar lista
+      forceRefresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -212,19 +183,15 @@ function AdminRetoFitContent() {
   };
 
   const moveFlyer = async (flyer: RetoFitFlyer, direction: 'up' | 'down') => {
+    if (!firestore || !flyers) return;
     const currentIndex = flyers.findIndex(f => f.id === flyer.id);
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
 
     if (targetIndex < 0 || targetIndex >= flyers.length) return;
 
     try {
-      if (!getApps().length) {
-        initializeApp(firebaseConfig);
-      }
-      const db = getFirestore();
-      
-      const flyerRef = doc(db, 'retofit_flyers', flyer.id);
-      const targetFlyerRef = doc(db, 'retofit_flyers', flyers[targetIndex].id);
+      const flyerRef = doc(firestore, 'retofit_flyers', flyer.id);
+      const targetFlyerRef = doc(firestore, 'retofit_flyers', flyers[targetIndex].id);
 
       await updateDoc(flyerRef, { order: flyers[targetIndex].order });
       await updateDoc(targetFlyerRef, { order: flyer.order });
@@ -233,7 +200,7 @@ function AdminRetoFitContent() {
         title: 'Orden actualizado',
         description: 'El orden de los flyers se ha actualizado.',
       });
-      loadFlyers(); // Recargar lista
+      forceRefresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -395,13 +362,13 @@ function AdminRetoFitContent() {
               </div>
             )}
 
-            {!isLoading && flyers.length === 0 && (
+            {!isLoading && (!flyers || flyers.length === 0) && (
               <p className="text-center text-muted-foreground py-8">
                 No hay flyers registrados. Crea el primero arriba.
               </p>
             )}
 
-            {!isLoading && flyers.length > 0 && (
+            {!isLoading && flyers && flyers.length > 0 && (
               <div className="space-y-4">
                 {flyers.map((flyer, index) => (
                   <Card key={flyer.id} className={!flyer.active ? 'opacity-50' : ''}>
@@ -493,13 +460,10 @@ export default function AdminRetoFitPage() {
     <SidebarProvider>
       <AdminSidebar />
       <SidebarInset>
-        {/* Mobile Header with Menu Trigger */}
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-          <SidebarTrigger className="h-10 w-10 -ml-2" />
-          <h1 className="text-lg font-semibold">Gestionar #RetoFIT</h1>
-        </header>
-        
-        <AdminRetoFitContent />
+        <AdminHeader />
+        <div className="p-4 sm:p-6 lg:p-8">
+            <AdminRetoFitContent />
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
