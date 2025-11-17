@@ -2,9 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import type { Participant } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { useUser, useFirebase } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminBottomNav } from '@/components/layout/AdminBottomNav';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
@@ -14,19 +12,22 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const { firestore } = useFirebase();
   const router = useRouter();
 
   // El email del admin es una forma rápida y segura de verificar el rol sin leer Firestore
   const isAdminByEmail = user?.email === 'admin@congreso.mx' || user?.email === 'admin@congreso.com';
 
   useEffect(() => {
-    if (!isUserLoading && !isAdminByEmail) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [isUserLoading, isAdminByEmail, router]);
+    // Si el usuario está cargado y no es un admin, lo saca.
+    if (!isUserLoading && user && !isAdminByEmail) {
+      router.push('/agenda');
+    }
+  }, [isUserLoading, user, isAdminByEmail, router]);
 
-  if (isUserLoading || !isAdminByEmail) {
+  if (isUserLoading || !user || !isAdminByEmail) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -49,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <AdminAuthGuard>
       <SidebarProvider>
         <AdminSidebar />
-        <SidebarInset className="bg-muted/40">
+        <SidebarInset>
           <AdminHeader />
           <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
             {children}
