@@ -7,27 +7,21 @@ import { Firestore, getFirestore, connectFirestoreEmulator } from 'firebase/fire
 import { FirebaseStorage, getStorage, connectStorageEmulator } from 'firebase/storage';
 import { firebaseConfig } from './config';
 import { FirebaseProvider, useAuth, useFirebase, useFirebaseApp, useFirestore } from './provider';
-import { FirebaseClientProvider } from './client-provider';
 import { useUser } from './auth/use-user';
 import { useCollection } from './firestore/use-collection';
 import { useDoc } from './firestore/use-doc';
 
 // One-time initialization of the Firebase app
 let firebaseApp: FirebaseApp;
-let auth: Auth;
-let firestore: Firestore;
-let storage: FirebaseStorage;
-
 if (getApps().length > 0) {
   firebaseApp = getApp();
 } else {
   firebaseApp = initializeApp(firebaseConfig);
 }
 
-auth = getAuth(firebaseApp);
-firestore = getFirestore(firebaseApp);
-storage = getStorage(firebaseApp);
-
+const auth = getAuth(firebaseApp);
+const firestore = getFirestore(firebaseApp);
+const storage = getStorage(firebaseApp);
 
 // NOTE: Emulator connection should only be used in development.
 if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
