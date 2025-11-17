@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Mail, Trophy, User as UserIcon } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface User {
   id: string;
@@ -21,7 +19,7 @@ interface User {
   createdAt?: any;
 }
 
-function UsuariosContent() {
+export default function UsuariosPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   
@@ -130,7 +128,7 @@ function UsuariosContent() {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-0">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Usuarios Registrados</h1>
         <p className="text-muted-foreground">
@@ -209,22 +207,5 @@ function UsuariosContent() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-export default function UsuariosPage() {
-  return (
-    <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset>
-        {/* Mobile Header with Menu Trigger */}
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-          <SidebarTrigger className="h-10 w-10 -ml-2" />
-          <h1 className="text-lg font-semibold">Usuarios Registrados</h1>
-        </header>
-        
-        <UsuariosContent />
-      </SidebarInset>
-    </SidebarProvider>
   );
 }

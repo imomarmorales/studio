@@ -6,14 +6,25 @@ import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import type { Participant } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { SidebarInset } from '@/components/ui/sidebar';
+import { usePathname } from 'next/navigation';
+
+function getPageTitle(pathname: string): string {
+    if (pathname.startsWith('/admin/events')) return 'Gestionar Eventos';
+    if (pathname.startsWith('/admin/usuarios')) return 'Usuarios Registrados';
+    if (pathname.startsWith('/admin/speakers')) return 'Ponentes';
+    if (pathname.startsWith('/admin/retofit')) return '#RetoFIT Flyers';
+    if (pathname.startsWith('/admin/content')) return 'Contenido Principal';
+    return 'Panel de Administración';
+}
 
 function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const router = useRouter();
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname);
 
   const userDocRef = useMemoFirebase(
     () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
@@ -51,7 +62,12 @@ function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AdminSidebar />
       <SidebarInset>
-        <main className="p-0 sm:p-6 lg:p-8">{children}</main>
+        {/* Mobile Header with Menu Trigger */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <SidebarTrigger className="h-10 w-10 -ml-2" />
+          <h1 className="text-lg font-semibold">{pageTitle}</h1>
+        </header>
+        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -45,7 +45,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { SidebarTrigger } from '@/components/ui/sidebar';
 
 
 const formSchema = z.object({
@@ -250,13 +249,7 @@ export default function ManageEventsPage() {
 
   return (
     <>
-      {/* Mobile Header with Menu Trigger */}
-      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-        <SidebarTrigger className="h-10 w-10 -ml-2" />
-        <h1 className="text-lg font-semibold">Gestionar Eventos</h1>
-      </header>
-
-      <div className="space-y-6 p-4 sm:p-0">
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <PageHeader
             title="Gestionar Eventos"
