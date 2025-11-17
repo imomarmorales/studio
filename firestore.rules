@@ -32,109 +32,79 @@ service cloud.firestore {
 
     // ============================================
     // USERS COLLECTION
-    // Stores user profiles, points, roles, credentials
     // ============================================
     match /users/{userId} {
-      // Anyone can create their own profile (registration)
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Un usuario puede crear su propio perfil
+      allow create: if isSignedIn() && isOwner(userId);
       
-      // Anyone signed in can read any user profile
-      // (Needed for leaderboards, participant lists, etc.)
-      allow get: if isSignedIn();
+      // Un usuario solo puede leer su propio perfil.
+      // El admin puede leer cualquier perfil (ver regla general arriba).
+      allow get: if isSignedIn() && isOwner(userId);
       
-      // List all users - everyone can see for rankings
-      allow list: if isSignedIn();
+      // SOLO ADMINS pueden listar todos los usuarios (para /admin/usuarios).
+      allow list: if isAdmin();
       
-      // Update - users can update their own profile
+      // Un usuario solo puede actualizar su propio perfil.
       allow update: if isSignedIn() && isOwner(userId);
       
-      // Delete - forbidden for regular users (admin ya tiene acceso con regla general)
+      // Nadie puede borrar perfiles (excepto admin).
       allow delete: if false;
       
-      // ============================================
-      // ATTENDANCE SUBCOLLECTION
-      // Tracks which events each user attended
-      // ============================================
+      // Subcolección de asistencia de un usuario
       match /attendance/{attendanceId} {
-        // Users can read their own attendance
-        allow get: if isSignedIn() && isOwner(userId);
+        // Un usuario puede leer y crear sus propios registros de asistencia
+        allow read, create: if isSignedIn() && isOwner(userId);
         
-        // Users can list their own attendance
-        allow list: if isSignedIn() && isOwner(userId);
-        
-        // Users can create their own attendance records (scan QR)
-        allow create: if isSignedIn() && isOwner(userId);
-        
-        // Update/delete forbidden for regular users (admin ya tiene acceso)
+        // Nadie más puede actualizar o borrar registros de asistencia (excepto admin)
         allow update, delete: if false;
       }
     }
     
     // ============================================
     // EVENTS COLLECTION
-    // Stores congress events with details, QR codes, images
     // ============================================
     match /events/{eventId} {
-      // Public read access for agenda-publica page
+      // CUALQUIERA puede leer eventos (para la agenda pública y la de usuarios logueados).
       allow get, list: if true;
       
-      // Only admins can create, update, or delete events
+      // Solo admins pueden crear, actualizar o eliminar eventos
       allow create, update, delete: if isAdmin();
       
-      // ============================================
-      // ATTENDEES SUBCOLLECTION (mirror for admin queries)
-      // Tracks who attended each event
-      // ============================================
+      // Subcolección de asistentes a un evento
       match /attendees/{attendeeId} {
-        // Anyone signed in can read attendees
+        // Usuarios logueados pueden ver quién asistió.
         allow get, list: if isSignedIn();
         
-        // Users can create their own attendance when scanning QR
+        // Un usuario puede registrar su propia asistencia (al escanear QR).
         allow create: if isSignedIn() && request.auth.uid == attendeeId;
         
-        // Delete forbidden for regular users (admin ya tiene acceso)
+        // Nadie puede borrar registros (excepto admin).
         allow delete: if false;
       }
     }
 
     // ============================================
-    // FUTURE COLLECTIONS (Add as needed)
+    // PUBLIC CONTENT COLLECTIONS
     // ============================================
     
-    // Announcements/News collection
-    match /announcements/{announcementId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // Speakers/Presenters collection
     match /speakers/{speakerId} {
-      allow read: if true; // Public read for landing page
-      allow create, update, delete: if isAdmin();
+      allow read: if true; // Lectura pública para la página de ponentes
+      allow write: if isAdmin(); // Solo admin puede modificar
     }
     
-    // Challenges/Contests collection
-    match /challenges/{challengeId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // Sponsors collection
     match /sponsors/{sponsorId} {
-      allow read: if true; // Public read for landing page
-      allow create, update, delete: if isAdmin();
+      allow read: if true; // Lectura pública para la página principal
+      allow write: if isAdmin();
     }
     
-    // Featured Events collection (for landing page)
     match /featuredEvents/{eventId} {
-      allow read: if true; // Public read for landing page
-      allow create, update, delete: if isAdmin();
+      allow read: if true; // Lectura pública para la página principal
+      allow write: if isAdmin();
     }
     
-    // RetoFIT Flyers collection
     match /retofit_flyers/{flyerId} {
-      allow read: if true; // Public read for RetoFIT page
-      allow create, update, delete: if isAdmin();
+      allow read: if true; // Lectura pública para la página #RetoFIT
+      allow write: if isAdmin();
     }
   }
 }
